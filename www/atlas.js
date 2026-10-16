@@ -1,6 +1,6 @@
 const DATA=window.ATLAS_DATA.quests;
 const W=224,H=62;
-const TR={"Shani":"sh","Celeste":"ce","Apollo":"ap","Tian Wen":"tw","Lance":"la","Cassio":"ca"};
+const TR={"Shani":"sh","Celeste":"ce","Apollo":"ap","Tian Wen":"tw","Lance":"la","Nomadic Envoy":"ca"};
 const Q={};DATA.forEach(d=>{Q[d.i]=d;d.unl=[]});
 DATA.forEach(d=>d.p.forEach(p=>Q[p]&&Q[p].unl.push(d.i)));
 const ids=DATA.map(d=>d.i);
