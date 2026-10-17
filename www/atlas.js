@@ -13,6 +13,8 @@ try{done=new Set(JSON.parse(Store.get(KEY)||"[]").filter(i=>Q[i]))}catch(e){}
 const save=()=>{Store.set(KEY,JSON.stringify([...done]))};
 const avail=i=>!done.has(i)&&Q[i].p.every(p=>done.has(p));
 function ancestors(i,s=new Set()){Q[i].p.forEach(p=>{if(!s.has(p)){s.add(p);ancestors(p,s)}});return s}
+// Unfinished quests still in the way; a done quest implies its own chain is done.
+function pending(i,s=new Set()){Q[i].p.forEach(p=>{if(!done.has(p)&&!s.has(p)){s.add(p);pending(p,s)}});return s}
 
 let shown=new Set(Object.keys(TR)),goodOnly=false,availOnly=false,sel=null;
 const NS="http://www.w3.org/2000/svg",world=document.getElementById("world"),svg=document.getElementById("map"),panel=document.getElementById("panel");
@@ -103,7 +105,7 @@ rb.onclick=()=>{if(armed){Native.tap("warning");clearTimeout(armed);armed=null;d
   rb.textContent="Tap again to reset";armed=setTimeout(()=>{armed=null;rb.textContent="Reset progress"},3000)};
 const dl=document.getElementById("qlist");DATA.slice().sort((a,b)=>a.n.localeCompare(b.n)).forEach(d=>{const o=document.createElement("option");o.value=d.n;dl.appendChild(o)});
 const find=document.getElementById("find");
-function doFind(){const s=find.value.trim().toLowerCase();if(!s)return;const d=DATA.find(x=>x.n.toLowerCase()===s)||DATA.find(x=>x.n.toLowerCase().includes(s));if(d)open(d.i)}
+function doFind(){const s=find.value.trim().toLowerCase();if(!s)return;const d=DATA.find(x=>x.n.toLowerCase()===s)||DATA.find(x=>x.n.toLowerCase().includes(s));if(d){find.blur();open(d.i)}}
 find.addEventListener("change",doFind);find.addEventListener("keydown",e=>{if(e.key==="Enter")doFind()});
 
 const RC={Common:"--r-com",Uncommon:"--r-unc",Rare:"--r-rare",Epic:"--r-epic",Legendary:"--r-leg"};
@@ -111,7 +113,7 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",
 const btns=a=>a.map(i=>`<button data-go="${i}">${esc(Q[i].n)}</button>`).join("");
 function open(i,keep){sel=i;const q=Q[i],k=TR[q.t];
   const st=done.has(i)?"Done":avail(i)?"Up next":"Locked";
-  const anc=[...ancestors(i)].filter(a=>!done.has(a));
+  const anc=[...pending(i)];
   panel.innerHTML=`
   <div class="row"><div class="chips"><span class="chip" style="background:var(--${k}-bg);color:var(--${k}-ink);border-color:var(--${k})">${q.t}</span><span class="chip">${st}</span>${q.one?'<span class="chip">One raid</span>':""}${q.tier==="bp"?'<span class="bdg bp">BP</span>':q.tier==="ep"?'<span class="bdg ep">EPIC</span>':""}</div>
   <button class="close" id="cls">Close</button></div>
