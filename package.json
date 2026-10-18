@@ -8,7 +8,8 @@
     "serve": "npx --yes http-server www -p 8080 -c-1",
     "sync": "npm run vendor && npx cap sync ios",
     "ios": "npm run sync && npx cap open ios",
-    "icons": "npx @capacitor/assets generate --ios"
+    "icons": "npx @capacitor/assets generate --ios",
+    "web": "npm run vendor && node scripts/build-web.mjs && cd dist-web && rm -f ../speranza-quest-atlas-web.zip && zip -qr ../speranza-quest-atlas-web.zip ."
   },
   "dependencies": {
     "@capacitor/browser": "^8.0.5",

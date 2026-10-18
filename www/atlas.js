@@ -148,12 +148,12 @@ document.getElementById("about").onclick=()=>{
   <div class="row"><div class="chips"><span class="chip">About</span></div><button class="close" id="cls">Close</button></div>
   <h2>Speranza Quest Atlas</h2>
   <p class="note"><strong>Unofficial fan-made tool.</strong> Not affiliated with, endorsed by, or sponsored by Embark Studios. Arc Raiders is a trademark of Embark Studios AB.</p>
-  <div><p class="lbl">Your progress</p><p class="note">Saved only on this device. No account, no ads, no tracking, and your progress never leaves your phone.</p></div>
+  <div><p class="lbl">Your progress</p><p class="note">${Native.isNative?"Saved only on this device. No account, no ads, no tracking, and your progress never leaves your phone.":"Saved only in this browser. No account, no ads, no tracking. Clearing your browser data resets it."}</p></div>
   <div><p class="lbl">Quest data</p><p class="note">Version ${esc(D.version)} · ${D.quests.length} quests · ${esc(D.source)}</p>
-  <div class="row" style="margin-top:8px"><button id="upd">Check for quest updates</button></div><p class="note" id="updmsg" style="margin-top:6px"></p></div>
+  ${Native.isNative?`<div class="row" style="margin-top:8px"><button id="upd">Check for quest updates</button></div><p class="note" id="updmsg" style="margin-top:6px"></p>`:""}</div>
   <div><p class="lbl">Sources</p><p class="note">Quest details compiled from community resources: <a href="https://arcraiders.wiki" target="_blank" rel="noopener">Arc Raiders Wiki</a> and <a href="https://metaforge.app/arc-raiders" target="_blank" rel="noopener">MetaForge</a>. Spot an error? It may be from an older patch.</p></div>
   ${C.privacyUrl?`<div class="row"><a href="${esc(C.privacyUrl)}" target="_blank" rel="noopener">Privacy policy</a></div>`:""}`;
   panel.hidden=false;document.getElementById("hint").hidden=true;
   document.getElementById("cls").onclick=()=>{panel.hidden=true};
-  document.getElementById("upd").onclick=async()=>{const m=document.getElementById("updmsg");m.textContent="Checking…";m.textContent=await Native.checkForUpdates(true)||""};
+  const ub=document.getElementById("upd");if(ub)ub.onclick=async()=>{const m=document.getElementById("updmsg");m.textContent="Checking…";m.textContent=await Native.checkForUpdates(true)||""};
 };

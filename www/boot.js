@@ -96,7 +96,7 @@
       const cached = JSON.parse(Store.get(DATA_KEY) || "null");
       if (valid(cached) && cached.version > bundled.version) data = cached;
     } catch (e) {}
-    data.source = data === bundled ? "bundled with the app" : "downloaded update";
+    data.source = data === bundled ? (isNative ? "bundled with the app" : "built into this site") : "downloaded update";
     window.ATLAS_DATA = data;
 
     const s = document.createElement("script");

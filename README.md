@@ -15,6 +15,12 @@ npm run serve     # browser preview at http://localhost:8080
 npm run ios       # sync into the iOS project and open Xcode (macOS only)
 ```
 
+## Website version
+
+`npm run web` builds the plain website (no iPhone plugins) into `dist-web/` and
+`speranza-quest-atlas-web.zip`. Drag the zip into Cloudflare Pages → Upload assets.
+The site also serves `data/quests.json`, so its URL can be the app's `dataUrl`.
+
 ## Update quest data after a patch
 
 1. Edit `www/data/quests.json` and bump `version` (e.g. `2026-11-02`).
