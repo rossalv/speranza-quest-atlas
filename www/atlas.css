@@ -139,3 +139,19 @@ header{position:relative;z-index:5}
 details.path summary{cursor:pointer;font-size:14px}
 details.path ol{margin-top:6px}
 details.path button{font-size:13px;padding:2px 8px;min-height:26px}
+
+/* --- Items to keep --- */
+ul.bring li.hit{background:var(--bg);box-shadow:0 0 0 2px var(--focus);border-radius:4px;padding:1px 6px;margin-left:-6px}
+.linkish{border:0;background:none;padding:4px 0;min-height:0;margin-top:6px;color:var(--focus);font-size:13px;text-decoration:underline;text-underline-offset:2px}
+.linkish:hover{border:0}
+ul.keep{list-style:none;padding:0;display:flex;flex-direction:column;gap:10px}
+ul.keep li{margin:0}
+.kp{border:1px solid var(--grid);border-radius:8px;padding:8px 10px;background:var(--bg)}
+.kh{display:flex;align-items:center;gap:8px;cursor:pointer;min-height:32px}
+.kh input{width:20px;height:20px;margin:0;accent-color:var(--done);flex:none}
+.kn{font:500 15px var(--f-body);flex:1}
+.kh .q{font-size:13px}
+.kp.got{opacity:.6}
+.kp.got .kn{text-decoration:line-through}
+.kq{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;padding-left:28px}
+.kq button{font-size:12px;padding:3px 8px;min-height:28px;background:var(--panel)}

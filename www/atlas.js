@@ -17,7 +17,7 @@ function ancestors(i,s=new Set()){Q[i].p.forEach(p=>{if(!s.has(p)){s.add(p);ance
 // Unfinished quests still in the way; a done quest implies its own chain is done.
 function pending(i,s=new Set()){Q[i].p.forEach(p=>{if(!done.has(p)&&!s.has(p)){s.add(p);pending(p,s)}});return s}
 
-let shown=new Set(Object.keys(TR)),goodOnly=false,availOnly=false,sel=null;
+let shown=new Set(Object.keys(TR)),goodOnly=false,availOnly=false,sel=null,fromItems=false;
 const NS="http://www.w3.org/2000/svg",world=document.getElementById("world"),svg=document.getElementById("map"),panel=document.getElementById("panel");
 function el(n,a,p){const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);p&&p.appendChild(e);return e}
 
@@ -109,10 +109,10 @@ svg.addEventListener("pointermove",e=>{if(!ptrs.has(e.pointerId))return;const p=
   if(ptrs.size===1){v.x+=dx;v.y+=dy;moved+=Math.abs(dx)+Math.abs(dy);if(moved>6)touched=true;apply()}
   else if(ptrs.size===2){const[a,b]=[...ptrs.values()],d=Math.hypot(a.x-b.x,a.y-b.y),r=svg.getBoundingClientRect();
     if(pinch)zoomAt((a.x+b.x)/2-r.left,(a.y+b.y)/2-r.top,d/pinch);pinch=d;moved=99;touched=true}});
-function up(e){ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;if(!ptrs.size){svg.classList.remove("drag");if(downId&&moved<6)open(downId);downId=null}}
+function up(e){ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;if(!ptrs.size){svg.classList.remove("drag");if(downId&&moved<6){fromItems=false;open(downId)}downId=null}}
 svg.addEventListener("pointerup",up);svg.addEventListener("pointercancel",up);
 svg.addEventListener("wheel",e=>{e.preventDefault();touched=true;const r=svg.getBoundingClientRect();zoomAt(e.clientX-r.left,e.clientY-r.top,Math.exp(-e.deltaY*.0015))},{passive:false});
-svg.addEventListener("keydown",e=>{const n=e.target.closest&&e.target.closest(".qn");if(n&&(e.key==="Enter"||e.key===" ")){e.preventDefault();open(n.dataset.id)}});
+svg.addEventListener("keydown",e=>{const n=e.target.closest&&e.target.closest(".qn");if(n&&(e.key==="Enter"||e.key===" ")){e.preventDefault();fromItems=false;open(n.dataset.id)}});
 const mid=()=>{const r=svg.getBoundingClientRect();return[r.width/2,r.height/2]};
 document.getElementById("zin").onclick=()=>{touched=true;zoomAt(...mid(),1.25)};
 document.getElementById("zout").onclick=()=>{touched=true;zoomAt(...mid(),.8)};
@@ -138,30 +138,37 @@ const ALIAS={bp:"blueprint",bps:"blueprint",blueprints:"blueprint"};
 const tokens=s=>norm(s).split(" ").filter(Boolean).map(t=>ALIAS[t]||t);
 const RANK={Legendary:5,Epic:4,Rare:3,Uncommon:2,Common:1};
 const REW=[];DATA.forEach(d=>d.r.forEach((r,ri)=>REW.push({q:d.i,ri,r,n:norm(r[0])})));
+// Items quests ask you to bring (q), so search can answer "what needs this?"
+const NEED=[];DATA.forEach(d=>d.q.forEach((r,qi)=>NEED.push({q:d.i,qi,r,n:norm(r[0])})));
+const stRank=i=>avail(i)?0:done.has(i)?2:1; // up next, then locked, then done
 function matches(t,n){const w=n.split(" ");return t.every(x=>w.some(y=>y.startsWith(x)))}
 function search(s){
-  const t=tokens(s);if(!t.length)return{qs:[],rs:[]};const ns=norm(s);
+  const t=tokens(s);if(!t.length)return{qs:[],rs:[],ns:[]};const ns=norm(s);
   const qs=DATA.filter(d=>matches(t,norm(d.n))||norm(d.n).includes(ns))
     .sort((a,b)=>(norm(b.n)===ns)-(norm(a.n)===ns)||norm(b.n).startsWith(ns)-norm(a.n).startsWith(ns)||a.n.localeCompare(b.n)).slice(0,6);
   const rs=REW.filter(x=>matches(t,x.n))
     .sort((a,b)=>(b.n===ns)-(a.n===ns)||(b.r[3]==="Blueprint")-(a.r[3]==="Blueprint")||(RANK[b.r[2]]||0)-(RANK[a.r[2]]||0)||a.r[0].localeCompare(b.r[0])||Q[a.q].n.localeCompare(Q[b.q].n)).slice(0,10);
-  return{qs,rs};
+  const nd=NEED.filter(x=>matches(t,x.n))
+    .sort((a,b)=>(b.n===ns)-(a.n===ns)||a.r[0].localeCompare(b.r[0])||stRank(a.q)-stRank(b.q)||Q[a.q].n.localeCompare(Q[b.q].n)).slice(0,8);
+  return{qs,rs,ns:nd};
 }
 const find=document.getElementById("find"),sugg=document.getElementById("sugg");
 let hits=[],cur=-1;
 function showSugg(){
   const s=find.value.trim();if(!s){hideSugg();return}
-  const{qs,rs}=search(s);hits=[];let h="";
+  const{qs,rs,ns}=search(s);hits=[];let h="";
   const qst=i=>done.has(i)?"done":avail(i)?"up next":"locked";
   if(qs.length){h+='<div class="sgh">Quests</div>';qs.forEach(d=>{hits.push({q:d.i});h+=`<button class="sg" role="option" data-k="${hits.length-1}"><span class="a">${esc(d.n)}</span><span class="b">${esc(d.t)} · ${qst(d.i)}</span></button>`})}
   if(rs.length){h+='<div class="sgh">Rewards</div>';rs.forEach(x=>{hits.push({q:x.q,ri:x.ri});const bp=x.r[3]==="Blueprint";
     h+=`<button class="sg" role="option" data-k="${hits.length-1}"><span class="a">${esc(x.r[0])}${x.r[1]>1?` <span class="q">×${x.r[1]}</span>`:""}${bp?' <span class="bdg bp">BP</span>':""}</span><span class="b">from ${esc(Q[x.q].n)} · ${esc(Q[x.q].t)} · ${qst(x.q)}</span></button>`})}
-  if(!hits.length)h='<div class="sgnone">No quests or rewards match.</div>';
+  if(ns.length){h+='<div class="sgh">Needed for</div>';ns.forEach(x=>{hits.push({q:x.q,qi:x.qi});
+    h+=`<button class="sg" role="option" data-k="${hits.length-1}"><span class="a">${esc(x.r[0])} <span class="q">×${x.r[1]}</span></span><span class="b">for ${esc(Q[x.q].n)} · ${esc(Q[x.q].t)} · ${qst(x.q)}</span></button>`})}
+  if(!hits.length)h='<div class="sgnone">No quests, rewards or items match.</div>';
   sugg.innerHTML=h;sugg.hidden=false;find.setAttribute("aria-expanded","true");cur=hits.length?0:-1;mark();
 }
 function hideSugg(){sugg.hidden=true;find.setAttribute("aria-expanded","false");cur=-1}
 function mark(){sugg.querySelectorAll(".sg").forEach(b=>b.classList.toggle("on",+b.dataset.k===cur));const on=sugg.querySelector(".sg.on");on&&on.scrollIntoView({block:"nearest"})}
-function pick(k){const x=hits[k];if(!x)return;hideSugg();find.blur();open(x.q,false,x.ri)}
+function pick(k){const x=hits[k];if(!x)return;hideSugg();find.blur();fromItems=false;open(x.q,false,x.ri,x.qi)}
 find.addEventListener("input",showSugg);
 find.addEventListener("focus",()=>{if(find.value.trim())showSugg()});
 find.addEventListener("keydown",e=>{
@@ -176,17 +183,20 @@ find.addEventListener("blur",()=>setTimeout(hideSugg,150));
 const RC={Common:"--r-com",Uncommon:"--r-unc",Rare:"--r-rare",Epic:"--r-epic",Legendary:"--r-leg"};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]);
 const btns=a=>a.map(i=>`<button data-go="${i}">${esc(Q[i].n)}</button>`).join("");
-function open(i,keep,hl){sel=i;const q=Q[i],k=TR[q.t];
+// hl: reward index to highlight (reward search). hq: bring-item index (needed-for search).
+function open(i,keep,hl,hq){sel=i;const q=Q[i],k=TR[q.t];
   const st=done.has(i)?"Done":avail(i)?"Up next":"Locked";
-  const anc=[...pending(i)];
+  const anc=[...pending(i)];const focus=hl!=null||hq!=null;
   panel.innerHTML=`
+  ${fromItems?'<div class="row"><button id="backitems">← Items to keep</button></div>':""}
   <div class="row"><div class="chips"><span class="chip" style="background:var(--${k}-bg);color:var(--${k}-ink);border-color:var(--${k})">${q.t}</span><span class="chip">${st}</span>${q.one?'<span class="chip">One raid</span>':""}${q.tier==="bp"?'<span class="bdg bp">BP</span>':q.tier==="ep"?'<span class="bdg ep">EPIC</span>':""}</div>
   <button class="close" id="cls">Close</button></div>
   <h2>${esc(q.n)}</h2>
   ${hl!=null&&q.r[hl]?`<p class="note">Reward <strong>${esc(q.r[hl][0])}</strong> comes from this quest.</p>`:""}
+  ${hq!=null&&q.q[hq]?`<p class="note">This quest needs <strong>${q.q[hq][1]}× ${esc(q.q[hq][0])}</strong>.</p>`:""}
   ${!done.has(i)?(anc.length?`<details class="path"${hl!=null?" open":""}><summary><strong>${anc.length}</strong> quest${anc.length>1?"s":""} left before this unlocks. The route is highlighted on the map.</summary><ol>${pathOrder(anc).map(a=>`<li><button data-go="${a}">${esc(Q[a].n)}</button> <span class="q">${esc(Q[a].t)}</span></li>`).join("")}</ol></details>`:'<p class="route">Available now.</p>'):""}
   <div><p class="lbl">Objectives</p><ol>${q.o.map(o=>`<li>${esc(o)}</li>`).join("")}</ol>${q.one?'<p class="note" style="margin-top:6px">Everything has to be done in a single raid.</p>':""}</div>
-  ${q.q.length?`<div><p class="lbl">Bring</p><ul>${q.q.map(r=>`<li>${r[1]}× ${esc(r[0])}</li>`).join("")}</ul></div>`:""}
+  ${q.q.length?`<div><p class="lbl">Bring</p><ul class="bring">${q.q.map((r,qi)=>`<li${qi===hq?' class="hit"':""}>${r[1]}× ${esc(r[0])}</li>`).join("")}</ul>${!done.has(i)&&!fromItems?'<button class="linkish" id="allitems">All items to keep</button>':""}</div>`:""}
   ${q.g.length?`<div><p class="lbl">Given on accept</p><ul>${q.g.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:""}
   <div><p class="lbl">Rewards</p><ul class="rw">${q.r.map((r,ri)=>`<li${ri===hl?' class="hit"':""}><span class="rar" style="color:var(${RC[r[2]]||"--muted"})">${esc(r[2]||r[3])}</span><span>${esc(r[0])}${r[3]==="Blueprint"?' <span class="bdg bp">BP</span>':""}</span><span class="q">×${r[1]}</span></li>`).join("")}${q.x?`<li><span class="rar" style="color:var(--muted)">XP</span><span class="q">${q.x.toLocaleString()}</span></li>`:""}</ul></div>
   ${q.p.length?`<div><p class="lbl">Requires${q.p.length>1?" (all)":""}</p><div class="links">${btns(q.p)}</div></div>`:""}
@@ -196,8 +206,10 @@ function open(i,keep,hl){sel=i;const q=Q[i],k=TR[q.t];
   <div class="row"><a href="https://arcraiders.wiki/wiki/Special:Search?search=${encodeURIComponent(q.n)}&go=Go" target="_blank" rel="noopener">Wiki</a>
   <a href="https://metaforge.app/arc-raiders/map" target="_blank" rel="noopener">Interactive map</a></div>
   <p class="note">Quest items aren't consumed, and squad progress is shared.</p>`;
-  panel.hidden=false;document.getElementById("hint").hidden=true;draw();if(!keep)(hl!=null?frameRoute(i,anc):centerOn(i));
-  document.getElementById("cls").onclick=()=>{panel.hidden=true;sel=null;draw()};
+  panel.hidden=false;panel.scrollTop=0;document.getElementById("hint").hidden=true;draw();if(!keep)(focus?frameRoute(i,anc):centerOn(i));
+  document.getElementById("cls").onclick=()=>{panel.hidden=true;sel=null;fromItems=false;draw()};
+  const bi=document.getElementById("backitems");if(bi)bi.onclick=()=>openItems();
+  const ai=document.getElementById("allitems");if(ai)ai.onclick=()=>openItems();
   document.getElementById("tog").onclick=()=>{done.has(i)?done.delete(i):done.add(i);save();open(i,true)};
   const h=document.getElementById("here");if(h)h.onclick=()=>{ancestors(i).forEach(a=>done.add(a));save();open(i,true)};
   panel.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>open(b.dataset.go));
@@ -208,7 +220,7 @@ else{document.querySelector(".board").insertAdjacentHTML("beforeend",'<div class
 
 // About screen: unofficial disclaimer, progress sharing, data version, sources.
 document.getElementById("about").onclick=()=>{
-  sel=null;draw();
+  sel=null;fromItems=false;draw();
   const D=window.ATLAS_DATA;
   panel.innerHTML=`
   <div class="row"><div class="chips"><span class="chip">About</span></div><button class="close" id="cls">Close</button></div>
@@ -282,3 +294,43 @@ function installHelp(){
   if(ios)return '<p class="note">In Safari, tap the <strong>Share</strong> button, then <strong>Add to Home Screen</strong>. It opens full screen and works offline. Your progress may not carry over, so share it first and paste the link in the installed version.</p>';
   return '<p class="note">In your browser menu, choose <strong>Install app</strong> or <strong>Add to Home screen</strong>. It opens in its own window and works offline.</p>';
 }
+
+// ---- Items to keep: everything unfinished quests ask you to bring ----
+// "Have it" ticks live under their own key; progress stays in speranza-atlas-done.
+const HAVE_KEY="speranza-atlas-have";
+let have=new Set();
+try{have=new Set(JSON.parse(Store.get(HAVE_KEY)||"[]"))}catch(e){}
+const saveHave=()=>Store.set(HAVE_KEY,JSON.stringify([...have]));
+function keepList(){
+  const m=new Map();
+  DATA.forEach(d=>{if(done.has(d.i))return;d.q.forEach(([n,k])=>{
+    let e=m.get(n);if(!e)m.set(n,e={n,total:0,soon:false,qs:[]});
+    e.total+=k;if(avail(d.i))e.soon=true;e.qs.push({i:d.i,k})})});
+  const list=[...m.values()];
+  list.forEach(e=>e.qs.sort((a,b)=>stRank(a.i)-stRank(b.i)||POS[a.i].y-POS[b.i].y||Q[a.i].n.localeCompare(Q[b.i].n)));
+  return list.sort((a,b)=>b.soon-a.soon||a.n.localeCompare(b.n));
+}
+function openItems(){
+  sel=null;fromItems=false;draw();
+  const list=keepList(),soon=list.filter(e=>e.soon),later=list.filter(e=>!e.soon);
+  const row=(e,k)=>`<li class="kp${have.has(e.n)?" got":""}">
+    <label class="kh"><input type="checkbox" data-k="${k}"${have.has(e.n)?" checked":""}><span class="kn">${esc(e.n)}</span><span class="q">×${e.total}</span></label>
+    <div class="kq">${e.qs.map(x=>`<button data-go="${x.i}">${esc(Q[x.i].n)} <span class="q">×${x.k}${avail(x.i)?" · up next":""}</span></button>`).join("")}</div></li>`;
+  const group=(title,arr,off)=>arr.length?`<div><p class="lbl">${title}</p><ul class="keep">${arr.map((e,j)=>row(e,off+j)).join("")}</ul></div>`:"";
+  panel.innerHTML=`
+  <div class="row"><div class="chips"><span class="chip">Items</span></div><button class="close" id="cls">Close</button></div>
+  <h2>Items to keep</h2>
+  ${list.length?`<p class="note">What your unfinished quests ask you to bring. Don't sell or recycle these. Tick what you already have; ticks are saved in this browser.</p>
+  <p class="q" id="keepcount"></p>
+  ${group("For quests up next",soon,0)}
+  ${group("For later quests",later,soon.length)}`
+  :'<p class="note">Nothing left to keep. None of your unfinished quests ask you to bring items.</p>'}`;
+  panel.hidden=false;panel.scrollTop=0;document.getElementById("hint").hidden=true;
+  const all=[...soon,...later];
+  const count=()=>{const c=document.getElementById("keepcount");if(c)c.textContent=`${all.length} item${all.length===1?"":"s"} · ${all.filter(e=>have.has(e.n)).length} ticked`};count();
+  document.getElementById("cls").onclick=()=>{panel.hidden=true};
+  panel.querySelectorAll("input[data-k]").forEach(cb=>cb.onchange=()=>{const e=all[+cb.dataset.k];
+    cb.checked?have.add(e.n):have.delete(e.n);saveHave();cb.closest(".kp").classList.toggle("got",cb.checked);count()});
+  panel.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{fromItems=true;open(b.dataset.go)});
+}
+document.getElementById("items").onclick=openItems;
