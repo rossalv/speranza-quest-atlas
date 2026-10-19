@@ -6,18 +6,7 @@ move it to "Done" with the date.
 
 ## Next up
 
-### 1. Items update (search "needed for" + "Keep these items" checklist)
-- **Search:** extend the search box (Quests / Rewards today) with a third group,
-  **Needed for**, built from each quest's `q` (items to bring). Picking a result opens
-  that quest with the item highlighted, the same way rewards work.
-- **Checklist:** a "Keep these items" view (About panel section or its own drawer) that
-  lists every `q` item needed by quests not yet done, with total quantities and which
-  quests need each one. Up-next quests first. Optional: per-item "have it" checkboxes in
-  localStorage (a new key; don't touch `speranza-atlas-done`).
-- Why: stops players selling or recycling quest items. Uses data already in the file.
-- Effort: small to medium. No data research needed.
-
-### 2. Map-specific links in quest drawers
+### 1. Map-specific links in quest drawers
 - Many objectives start "On Dam Battlegrounds…", "On Buried City…" and so on. Detect
   map names in `o` and show a link per map, instead of the single generic
   "Interactive map" link.
@@ -26,7 +15,7 @@ move it to "Done" with the date.
   Keep the generic link when no map is named.
 - Effort: small.
 
-### 3. Plan a raid by map
+### 2. Plan a raid by map
 - Pick a map and see which of your up-next quests can be done there in one trip.
 - Needs a new per-quest field, e.g. `m: ["Dam Battlegrounds", ...]` (empty = any map).
   That's a research pass over all quests, using the CLAUDE.md sourcing rules (two
@@ -36,7 +25,7 @@ move it to "Done" with the date.
 
 ## Later
 
-### 4. Squad mode
+### 3. Squad mode
 - Squadmates join with a short code and see overlapping progress: quests everyone has
   up next, who is behind on a chain.
 - First server feature: add a Worker script (`main` in wrangler.jsonc) with an `/api`
@@ -45,7 +34,7 @@ move it to "Done" with the date.
   rules). No accounts: squad code plus a per-device name.
 - Effort: large.
 
-### 5. Visitor counts
+### 4. Visitor counts
 - Cloudflare Web Analytics (free, cookie-free) to see whether people besides Ross's
   squad use the site. Change the About "no tracking" line to something like
   "anonymous visit counts, no personal data".
@@ -73,3 +62,4 @@ move it to "Done" with the date.
 - 2026-10-18: Website-only cleanup; CLAUDE.md rewrite; weekly quest-data check
 - 2026-10-18: Reward search with path to the reward
 - 2026-10-18: Install like an app (home screen, offline)
+- 2026-10-18: Items update: "Needed for" search, "Items to keep" checklist with have-it ticks (`speranza-atlas-have`). Open question: totals add quantities across quests; switch to the largest single need if quest items turn out not to be consumed.

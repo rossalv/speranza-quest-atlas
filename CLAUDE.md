@@ -80,6 +80,7 @@ screenshots, not just console output.
 - Share links (`#p=`) list only the furthest done quest in each chain; prerequisites
   are implied. Keep old links working when changing this.
 - Keep the localStorage key `speranza-atlas-done` so visitors don't lose progress.
+  "Have it" ticks on the Items to keep list use `speranza-atlas-have` (item names).
 
 ## History
 The project started as an iPhone app (Capacitor). Ross switched to website-only on
