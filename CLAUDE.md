@@ -12,6 +12,11 @@ web/Cloudflare specifics briefly).
 - `www/atlas.js` — map layout (dagre), drawing, drawer, filters, starting view, About, share links
 - `www/atlas.css` — all styles, light + dark themes
 - `www/data/quests.json` — quest data (format below)
+- `www/sw.js` — service worker for offline use and home-screen install. Page code and
+  data are network-first (always revalidated), fonts/library/icons cache-first. The cache
+  name gets the commit at build time, so each deploy replaces the old offline copy.
+  If it ever misbehaves, ship a `sw.js` that calls `self.registration.unregister()`.
+- `www/manifest.webmanifest` — install name, icons (`assets/web/icon-*.png`), colors
 - `www/vendor/`, `www/fonts/` — dagre and fonts, copied from node_modules by `npm run vendor`
 - `assets/web/` — favicons, link-preview image `og.png` and its source `og-card.html`
 - `scripts/build-web.mjs` — builds `dist-web/`: adds link-preview tags, icons, `_headers`, `version.json`

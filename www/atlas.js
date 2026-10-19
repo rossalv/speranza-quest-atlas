@@ -216,13 +216,19 @@ document.getElementById("about").onclick=()=>{
   <p class="note"><strong>Unofficial fan-made tool.</strong> Not affiliated with, endorsed by, or sponsored by Embark Studios. Arc Raiders is a trademark of Embark Studios AB.</p>
   <div><p class="lbl">Your progress</p><p class="note">Saved only in this browser. No account, no ads, no tracking. Clearing your browser data resets it.</p>
   <div class="row" style="margin-top:8px"><button id="share2">Share progress</button></div><p class="share-msg" id="sharemsg2"></p>
-  <p class="note" style="margin-top:6px">Opens on any phone or computer, or send it to your squad.</p></div>
+  <p class="note" style="margin-top:6px">Opens on any phone or computer, or send it to your squad.</p>
+  <div class="row" style="margin-top:10px"><input type="url" id="plink" placeholder="Paste a progress link" aria-label="Paste a progress link" style="flex:1;min-width:0"><button id="pload">Load</button></div><p class="share-msg" id="ploadmsg"></p></div>
+  <div><p class="lbl">Use it like an app</p>${installHelp()}</div>
   <div><p class="lbl">Quest data</p><p class="note">${esc(D.label||"")}${D.label?" · ":""}version ${esc(D.version)} · ${D.quests.length} quests</p></div>
   <div><p class="lbl">Sources</p><p class="note">Quest details compiled from community resources: <a href="https://arcraiders.wiki" target="_blank" rel="noopener">Arc Raiders Wiki</a> and <a href="https://metaforge.app/arc-raiders" target="_blank" rel="noopener">MetaForge</a>. Spot an error? It may be from an older patch.</p></div>
 `;
   panel.hidden=false;document.getElementById("hint").hidden=true;
   document.getElementById("cls").onclick=()=>{panel.hidden=true};
   document.getElementById("share2").onclick=()=>shareProgress(document.getElementById("sharemsg2"));
+  document.getElementById("pload").onclick=()=>{const v=document.getElementById("plink").value,m=v.match(/#p=[a-z0-9~-]*/i);
+    if(!m){document.getElementById("ploadmsg").textContent="That doesn't look like a progress link. It should contain #p=";return}
+    location.hash=m[0].slice(1)}; // hashchange runs checkShared
+  const ib=document.getElementById("install");if(ib)ib.onclick=async()=>{const p=window.__installPrompt;if(!p)return;p.prompt();try{await p.userChoice}catch(e){}window.__installPrompt=null;ib.remove()};
 };
 
 // ---- Share progress by link (no accounts) ----
@@ -266,3 +272,13 @@ function checkShared(){
   document.getElementById("noit").onclick=()=>{clear();panel.hidden=true;draw()};
 }
 addEventListener("hashchange",checkShared);
+
+// ---- Install help (About screen) ----
+function installHelp(){
+  const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+  const ios=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+  if(standalone)return '<p class="note">You\'re using the installed version. It works offline. Progress here can be separate from your browser\'s: to bring it over, tap Share progress in the browser, copy the link, and paste it above.</p>';
+  if(window.__installPrompt)return '<p class="note">Install it for a home-screen icon, full-screen view and offline use.</p><div class="row" style="margin-top:8px"><button id="install">Install app</button></div>';
+  if(ios)return '<p class="note">In Safari, tap the <strong>Share</strong> button, then <strong>Add to Home Screen</strong>. It opens full screen and works offline. Your progress may not carry over, so share it first and paste the link in the installed version.</p>';
+  return '<p class="note">In your browser menu, choose <strong>Install app</strong> or <strong>Add to Home screen</strong>. It opens in its own window and works offline.</p>';
+}

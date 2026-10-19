@@ -19,6 +19,15 @@
   };
   window.Store = Store;
 
+  // Install / offline support. The install prompt (Chrome, Edge, Android) only fires
+  // once and early, so keep it for the About screen's "Install app" button.
+  window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); window.__installPrompt = e; });
+  if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" }).catch(() => {});
+    });
+  }
+
   async function start() {
     Store.init([PROGRESS_KEY]);
     const res = await fetch("data/quests.json", { cache: "no-cache" });

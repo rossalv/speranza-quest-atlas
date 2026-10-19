@@ -27,7 +27,7 @@ html = html.replace(
   '<link rel="apple-touch-icon" href="icon-180.png">'
 );
 writeFileSync("dist-web/index.html", html);
-for (const f of ["icon-180.png", "icon-192.png", "og.png"]) copyFileSync(`assets/web/${f}`, `dist-web/${f}`);
+for (const f of ["icon-180.png", "icon-192.png", "icon-512.png", "icon-maskable-512.png", "og.png"]) copyFileSync(`assets/web/${f}`, `dist-web/${f}`);
 
 // version.json: which commit the live site was built from (used to confirm deploys).
 import { execSync } from "node:child_process";
@@ -38,10 +38,16 @@ writeFileSync("dist-web/version.json", JSON.stringify({
   commit, builtAt: new Date().toISOString(), dataVersion: data.version,
 }, null, 2) + "\n");
 
+// Service worker cache name changes every build, so old offline copies are replaced.
+const sw = readFileSync("dist-web/sw.js", "utf8").replace('"atlas-__BUILD__"', `"atlas-${(commit || String(Date.now())).slice(0, 12)}"`);
+writeFileSync("dist-web/sw.js", sw);
+
 // Long cache for fonts/libraries, always-fresh quest data.
 writeFileSync("dist-web/_headers",
   "/fonts/*\n  Cache-Control: public, max-age=31536000, immutable\n" +
   "/vendor/*\n  Cache-Control: public, max-age=604800\n" +
   "/data/*\n  Cache-Control: no-cache\n  Access-Control-Allow-Origin: *\n" +
-  "/version.json\n  Cache-Control: no-cache\n");
+  "/version.json\n  Cache-Control: no-cache\n" +
+  "/sw.js\n  Cache-Control: no-cache\n" +
+  "/manifest.webmanifest\n  Content-Type: application/manifest+json\n");
 console.log("built dist-web/");
