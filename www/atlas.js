@@ -12,6 +12,7 @@ let done=new Set();
 try{done=new Set(JSON.parse(Store.get(KEY)||"[]").filter(i=>Q[i]))}catch(e){}
 const save=()=>{Store.set(KEY,JSON.stringify([...done]))};
 const avail=i=>!done.has(i)&&Q[i].p.every(p=>done.has(p));
+function descendants(i,s=new Set()){Q[i].unl.forEach(c=>{if(!s.has(c)){s.add(c);descendants(c,s)}});return s}
 function ancestors(i,s=new Set()){Q[i].p.forEach(p=>{if(!s.has(p)){s.add(p);ancestors(p,s)}});return s}
 // Unfinished quests still in the way; a done quest implies its own chain is done.
 function pending(i,s=new Set()){Q[i].p.forEach(p=>{if(!done.has(p)&&!s.has(p)){s.add(p);pending(p,s)}});return s}
@@ -74,6 +75,19 @@ const apply=()=>world.setAttribute("transform",`translate(${v.x},${v.y}) scale($
 function zoomAt(px,py,f){const k=Math.min(2.5,Math.max(.08,v.k*f));const wx=(px-v.x)/v.k,wy=(py-v.y)/v.k;v.k=k;v.x=px-wx*k;v.y=py-wy*k;apply()}
 function area(){const r=svg.getBoundingClientRect();let w=r.width,h=r.height;if(!panel.hidden){const p=panel.getBoundingClientRect();if(p.height<r.height-1)h-=p.height;else w-=p.width}return{w,h}}
 function fit(){const a=area();const k=Math.min(a.w/BOUNDS.w,a.h/BOUNDS.h,1.2);v.k=k;v.x=(a.w-BOUNDS.w*k)/2;v.y=(a.h-BOUNDS.h*k)/2;apply()}
+// Starting view: frame the quests that are up next at a readable size. If they're
+// too spread out for that, center on the one that leads to the most quests.
+let touched=false;
+function home(){
+  const a=area(),nx=ids.filter(i=>avail(i)&&shown.has(Q[i].t));
+  if(!nx.length){fit();return}
+  let x0=1/0,y0=1/0,x1=-1/0,y1=-1/0;
+  nx.forEach(i=>{const P=POS[i];x0=Math.min(x0,P.x-W/2);x1=Math.max(x1,P.x+W/2);y0=Math.min(y0,P.y-H/2);y1=Math.max(y1,P.y+H/2)});
+  const pad=40,bw=x1-x0+pad*2,bh=y1-y0+pad*2,k=Math.min(a.w/bw,a.h/bh,1);
+  if(k>=.6){v.k=k;v.x=(a.w-bw*k)/2-(x0-pad)*k;v.y=Math.min((a.h-bh*k)/2,a.h*.12)-(y0-pad)*k;apply();return}
+  const best=nx.reduce((b,i)=>descendants(i).size>descendants(b).size?i:b,nx[0]),P=POS[best];
+  v.k=a.w<700?Math.min(1,a.w/(W*1.5)):.8;v.x=a.w/2-P.x*v.k;v.y=a.h*.2-P.y*v.k;apply();
+}
 function centerOn(i){const a=area(),P=POS[i];if(v.k<.75)v.k=.75;v.x=a.w/2-P.x*v.k;v.y=a.h/2-P.y*v.k;apply()}
 
 const ptrs=new Map();let moved=0,downId=null,pinch=null;
@@ -82,26 +96,30 @@ svg.addEventListener("pointerdown",e=>{svg.setPointerCapture(e.pointerId);ptrs.s
   if(ptrs.size===2){const[a,b]=[...ptrs.values()];pinch=Math.hypot(a.x-b.x,a.y-b.y)}});
 svg.addEventListener("pointermove",e=>{if(!ptrs.has(e.pointerId))return;const p=ptrs.get(e.pointerId),dx=e.clientX-p.x,dy=e.clientY-p.y;
   ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
-  if(ptrs.size===1){v.x+=dx;v.y+=dy;moved+=Math.abs(dx)+Math.abs(dy);apply()}
+  if(ptrs.size===1){v.x+=dx;v.y+=dy;moved+=Math.abs(dx)+Math.abs(dy);if(moved>6)touched=true;apply()}
   else if(ptrs.size===2){const[a,b]=[...ptrs.values()],d=Math.hypot(a.x-b.x,a.y-b.y),r=svg.getBoundingClientRect();
-    if(pinch)zoomAt((a.x+b.x)/2-r.left,(a.y+b.y)/2-r.top,d/pinch);pinch=d;moved=99}});
+    if(pinch)zoomAt((a.x+b.x)/2-r.left,(a.y+b.y)/2-r.top,d/pinch);pinch=d;moved=99;touched=true}});
 function up(e){ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;if(!ptrs.size){svg.classList.remove("drag");if(downId&&moved<6)open(downId);downId=null}}
 svg.addEventListener("pointerup",up);svg.addEventListener("pointercancel",up);
-svg.addEventListener("wheel",e=>{e.preventDefault();const r=svg.getBoundingClientRect();zoomAt(e.clientX-r.left,e.clientY-r.top,Math.exp(-e.deltaY*.0015))},{passive:false});
+svg.addEventListener("wheel",e=>{e.preventDefault();touched=true;const r=svg.getBoundingClientRect();zoomAt(e.clientX-r.left,e.clientY-r.top,Math.exp(-e.deltaY*.0015))},{passive:false});
 svg.addEventListener("keydown",e=>{const n=e.target.closest&&e.target.closest(".qn");if(n&&(e.key==="Enter"||e.key===" ")){e.preventDefault();open(n.dataset.id)}});
 const mid=()=>{const r=svg.getBoundingClientRect();return[r.width/2,r.height/2]};
-document.getElementById("zin").onclick=()=>zoomAt(...mid(),1.25);
-document.getElementById("zout").onclick=()=>zoomAt(...mid(),.8);
-document.getElementById("fit").onclick=fit;
+document.getElementById("zin").onclick=()=>{touched=true;zoomAt(...mid(),1.25)};
+document.getElementById("zout").onclick=()=>{touched=true;zoomAt(...mid(),.8)};
+document.getElementById("fit").onclick=()=>{touched=true;fit()};
 
 const tbox=document.getElementById("traders");
 Object.keys(TR).forEach(t=>{const b=document.createElement("button");b.className="tchip";b.setAttribute("aria-pressed","true");
   const n=DATA.filter(d=>d.t===t).length;b.innerHTML=`<span class="sw" style="background:var(--${TR[t]})"></span>${t} <span class="q">${n}</span>`;
-  b.onclick=()=>{shown.has(t)?shown.delete(t):shown.add(t);b.setAttribute("aria-pressed",shown.has(t));draw()};tbox.appendChild(b)});
-const gb=document.getElementById("good");gb.onclick=()=>{goodOnly=!goodOnly;gb.setAttribute("aria-pressed",goodOnly);draw()};
-const ab=document.getElementById("avail");ab.onclick=()=>{availOnly=!availOnly;ab.setAttribute("aria-pressed",availOnly);draw()};
+  b.onclick=()=>{shown.has(t)?shown.delete(t):shown.add(t);b.setAttribute("aria-pressed",shown.has(t));flabel();draw()};tbox.appendChild(b)});
+const gb=document.getElementById("good");gb.onclick=()=>{goodOnly=!goodOnly;gb.setAttribute("aria-pressed",goodOnly);flabel();draw()};
+const ab=document.getElementById("avail");ab.onclick=()=>{availOnly=!availOnly;ab.setAttribute("aria-pressed",availOnly);flabel();draw()};
+// Phone: filters live behind this button; its label shows how many are on.
+const ft=document.getElementById("ftog"),hdr=document.querySelector("header");
+function flabel(){const n=(Object.keys(TR).length-shown.size)+(goodOnly?1:0)+(availOnly?1:0);ft.textContent=n?`Filters · ${n}`:"Filters"}
+ft.onclick=()=>{const o=!hdr.classList.contains("open");hdr.classList.toggle("open",o);ft.setAttribute("aria-expanded",o)};
 const rb=document.getElementById("reset");let armed=null;
-rb.onclick=()=>{if(armed){Native.tap("warning");clearTimeout(armed);armed=null;done.clear();save();rb.textContent="Reset progress";sel?open(sel,true):draw();return}
+rb.onclick=()=>{if(armed){Native.tap("warning");clearTimeout(armed);armed=null;done.clear();save();rb.textContent="Reset progress";sel?open(sel,true):(draw(),home());return}
   rb.textContent="Tap again to reset";armed=setTimeout(()=>{armed=null;rb.textContent="Reset progress"},3000)};
 const dl=document.getElementById("qlist");DATA.slice().sort((a,b)=>a.n.localeCompare(b.n)).forEach(d=>{const o=document.createElement("option");o.value=d.n;dl.appendChild(o)});
 const find=document.getElementById("find");
@@ -137,7 +155,7 @@ function open(i,keep){sel=i;const q=Q[i],k=TR[q.t];
   panel.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>open(b.dataset.go));
 }
 
-if(window.dagre){layout();draw();fit();addEventListener("resize",()=>{if(!sel)fit()})}
+if(window.dagre){layout();draw();home();addEventListener("resize",()=>{if(!sel&&!touched)home()});setTimeout(checkShared,0)}
 else{document.querySelector(".board").insertAdjacentHTML("beforeend",'<div class="err">The layout library didn\'t load. Reload the page to try again.</div>')}
 
 // About screen: unofficial disclaimer, privacy, data version, manual update check.
@@ -148,12 +166,57 @@ document.getElementById("about").onclick=()=>{
   <div class="row"><div class="chips"><span class="chip">About</span></div><button class="close" id="cls">Close</button></div>
   <h2>Speranza Quest Atlas</h2>
   <p class="note"><strong>Unofficial fan-made tool.</strong> Not affiliated with, endorsed by, or sponsored by Embark Studios. Arc Raiders is a trademark of Embark Studios AB.</p>
-  <div><p class="lbl">Your progress</p><p class="note">${Native.isNative?"Saved only on this device. No account, no ads, no tracking, and your progress never leaves your phone.":"Saved only in this browser. No account, no ads, no tracking. Clearing your browser data resets it."}</p></div>
+  <div><p class="lbl">Your progress</p><p class="note">${Native.isNative?"Saved only on this device. No account, no ads, no tracking, and your progress never leaves your phone.":"Saved only in this browser. No account, no ads, no tracking. Clearing your browser data resets it."}</p>
+  <div class="row" style="margin-top:8px"><button id="share2">Share progress</button></div><p class="share-msg" id="sharemsg2"></p>
+  <p class="note" style="margin-top:6px">Opens on any phone or computer, or send it to your squad.</p></div>
   <div><p class="lbl">Quest data</p><p class="note">Version ${esc(D.version)} · ${D.quests.length} quests · ${esc(D.source)}</p>
   ${Native.isNative?`<div class="row" style="margin-top:8px"><button id="upd">Check for quest updates</button></div><p class="note" id="updmsg" style="margin-top:6px"></p>`:""}</div>
   <div><p class="lbl">Sources</p><p class="note">Quest details compiled from community resources: <a href="https://arcraiders.wiki" target="_blank" rel="noopener">Arc Raiders Wiki</a> and <a href="https://metaforge.app/arc-raiders" target="_blank" rel="noopener">MetaForge</a>. Spot an error? It may be from an older patch.</p></div>
   ${C.privacyUrl?`<div class="row"><a href="${esc(C.privacyUrl)}" target="_blank" rel="noopener">Privacy policy</a></div>`:""}`;
   panel.hidden=false;document.getElementById("hint").hidden=true;
   document.getElementById("cls").onclick=()=>{panel.hidden=true};
+  document.getElementById("share2").onclick=()=>shareProgress(document.getElementById("sharemsg2"));
   const ub=document.getElementById("upd");if(ub)ub.onclick=async()=>{const m=document.getElementById("updmsg");m.textContent="Checking…";m.textContent=await Native.checkForUpdates(true)||""};
 };
+
+// ---- Share progress by link (no accounts) ----
+// The link lists only the furthest quests done in each chain. Finishing a quest in
+// the game requires its prerequisites, so everything before them counts as done too.
+function progressLink(){
+  const front=[...done].filter(i=>!Q[i].unl.some(c=>done.has(c)));
+  const base=Native.isNative?((window.ATLAS_CONFIG||{}).siteUrl||""):location.origin+location.pathname;
+  return base+"#p="+front.join("~");
+}
+async function shareProgress(msg){
+  if(!done.size){msg.textContent="Mark some quests done first.";return}
+  const url=progressLink();
+  try{if(navigator.share){await navigator.share({title:"My Speranza Quest Atlas progress",url});return}}catch(e){if(e&&e.name==="AbortError")return}
+  try{await navigator.clipboard.writeText(url);msg.textContent="Link copied. Paste it on your other device or send it to your squad."}
+  catch(e){prompt("Copy this link:",url)}
+}
+document.getElementById("share").onclick=()=>shareProgress({set textContent(t){showToastMsg(t)}});
+function showToastMsg(t){const b=document.createElement("button");b.className="toast";b.textContent=t;b.onclick=()=>b.remove();document.body.appendChild(b);setTimeout(()=>b.remove(),4000)}
+function checkShared(){
+  const m=location.hash.match(/^#p=([a-z0-9~-]*)$/i);if(!m)return;
+  const got=new Set();m[1].split("~").filter(i=>Q[i]).forEach(i=>{got.add(i);ancestors(i).forEach(a=>got.add(a))});
+  const clear=()=>{try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}};
+  if(!got.size){clear();return}
+  const extra=[...got].filter(i=>!done.has(i)).length;
+  if(!extra){clear();showToastMsg("You already have everything in this link.");return}
+  sel=null;draw();
+  panel.innerHTML=`
+  <div class="row"><div class="chips"><span class="chip">Shared progress</span></div></div>
+  <h2>Load this progress?</h2>
+  <p class="note">The link has <strong>${got.size}</strong> quests done. ${done.size?`You have <strong>${done.size}</strong> marked here.`:"Nothing is marked in this browser yet."}</p>
+  <div class="row">
+    <button class="donebtn" aria-pressed="true" id="useit">${done.size?"Replace mine":"Load it"}</button>
+    ${done.size&&extra?`<button id="addit">Add ${extra} to mine</button>`:""}
+    <button id="noit">Cancel</button>
+  </div>`;
+  panel.hidden=false;document.getElementById("hint").hidden=true;
+  const finish=()=>{save();clear();panel.hidden=true;draw();touched=false;home()};
+  document.getElementById("useit").onclick=()=>{done=new Set(got);finish()};
+  const ad=document.getElementById("addit");if(ad)ad.onclick=()=>{got.forEach(i=>done.add(i));finish()};
+  document.getElementById("noit").onclick=()=>{clear();panel.hidden=true;draw()};
+}
+addEventListener("hashchange",checkShared);

@@ -63,6 +63,7 @@ svg#map.drag{cursor:grabbing}
 .qn .t{font:600 14px var(--f-display)} .qn .s{font:400 10.5px var(--f-mono)}
 .qn.locked{opacity:.55}
 .qn.done rect.card{stroke-dasharray:4 3}
+.qn rect.ring{fill:none;stroke:none} /* only up-next quests get the outline */
 .qn.next rect.ring{fill:none;stroke:var(--focus);stroke-width:2}
 .qn.sel rect.card{stroke-width:3.5}
 .qn .chk{fill:var(--done)}
@@ -107,3 +108,17 @@ header,button,.hint{-webkit-user-select:none;user-select:none}
 input[type=search]{font-size:16px} /* stops iOS zooming into the field */
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:10;background:var(--ink);color:var(--panel);border:0;border-radius:8px;padding:10px 14px;font:500 13px var(--f-body);max-width:calc(100% - 32px);box-shadow:0 4px 16px rgba(0,0,0,.25)}
 body{font-size:14px}
+
+/* --- Phone header: filters collapse behind a button --- */
+.ftog{display:none}
+.pbtns{margin-left:auto}
+@media (max-width:640px){
+  .ftog{display:inline-flex;align-items:center}
+  .ftog[aria-expanded="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+  #zin,#zout{display:none} /* pinch zooms the map */
+  header:not(.open) .filters{display:none}
+  .tools{margin-left:0;width:100%}
+  .tools input[type=search]{flex:1;width:auto;min-width:0}
+  .pbtns{margin-left:0}
+}
+.share-msg{font-size:13px;color:var(--done);margin:6px 0 0}

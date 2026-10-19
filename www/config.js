@@ -9,4 +9,7 @@ window.ATLAS_CONFIG = {
   // Public URL of docs/privacy.html once it's hosted. App Store Connect needs
   // the same URL, and the About screen links to it.
   privacyUrl: "",
+
+  // Public site address, used for progress share links (the app has no web address).
+  siteUrl: "https://speranzaquestmap.us/",
 };
