@@ -1,22 +1,29 @@
-# Builds the website and deploys it to the existing Cloudflare Pages project
-# behind speranzaquestmap.us.
+# Builds the website and deploys it to the Cloudflare Worker "speranza-atlas"
+# (static assets, settings in wrangler.jsonc) behind speranzaquestmap.us.
 #   push to main        -> production (speranzaquestmap.us)
-#   push to any branch  -> preview URL (<branch>.<project>.pages.dev)
+#   push to any branch  -> preview URL (<branch>-speranza-atlas.<account>.workers.dev),
+#                          production untouched
+#
+# After every run, the result (pass/fail, failing step, deploy log, URLs) is
+# written to deploy-status/status.json and deploy-status/deploy.log on the
+# `deploy-status` branch, so Claude can read it with git. The live site also
+# serves /version.json with the commit it was built from.
 #
 # One-time setup in GitHub → repo Settings → Secrets and variables → Actions:
-#   Secret   CLOUDFLARE_API_TOKEN   (custom token: Account → Cloudflare Pages → Edit)
+#   Secret   CLOUDFLARE_API_TOKEN   (custom token: Account → Workers Scripts → Edit)
 #   Secret   CLOUDFLARE_ACCOUNT_ID
-#   Variable CF_PAGES_PROJECT       (the Pages project name, as shown in the dashboard)
 name: Deploy site
 
 on:
   push:
+    branches-ignore: [deploy-status]
     paths:
       - "www/**"
       - "assets/web/**"
       - "scripts/**"
       - "package.json"
       - "package-lock.json"
+      - "wrangler.jsonc"
       - ".github/workflows/deploy-site.yml"
   workflow_dispatch:
 
@@ -28,37 +35,42 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write      # to publish the status report to the deploy-status branch
       deployments: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Check Cloudflare settings
         id: cfg
         env:
           TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          PROJECT: ${{ vars.CF_PAGES_PROJECT }}
         run: |
-          if [ -z "$TOKEN" ] || [ -z "$ACCOUNT" ] || [ -z "$PROJECT" ]; then
-            echo "::notice::Cloudflare secrets/variable not set yet, so the build ran but nothing was deployed."
+          missing=""
+          [ -z "$TOKEN" ]   && missing="$missing CLOUDFLARE_API_TOKEN(secret)"
+          [ -z "$ACCOUNT" ] && missing="$missing CLOUDFLARE_ACCOUNT_ID(secret)"
+          echo "missing=${missing# }" >> "$GITHUB_OUTPUT"
+          if [ -n "$missing" ]; then
+            echo "::notice::Not deploying, missing:$missing"
             echo "ready=false" >> "$GITHUB_OUTPUT"
           else
             echo "ready=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
 
       - name: Build site
+        id: build
         run: |
           npm ci --no-audit --no-fund
           npm run vendor
           node scripts/build-web.mjs
 
       - name: Check quest data
+        id: data
         run: |
           node -e '
             const d = JSON.parse(require("fs").readFileSync("dist-web/data/quests.json", "utf8"));
@@ -69,11 +81,56 @@ jobs:
             console.log(`OK: ${d.quests.length} quests, data version ${d.version}`);
           '
 
-      - name: Deploy to Cloudflare Pages
+      - name: Deploy to Cloudflare Workers
+        id: deploy
         if: steps.cfg.outputs.ready == 'true'
-        uses: cloudflare/wrangler-action@v4
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist-web --project-name=${{ vars.CF_PAGES_PROJECT }} --branch=${{ github.ref_name }} --commit-dirty=true
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -o pipefail
+          msg="$(git log -1 --format=%s | cut -c1-90)"
+          if [ "$GITHUB_REF_NAME" = "main" ]; then
+            npx --yes wrangler@4 deploy --message "$msg" 2>&1 | tee deploy.log
+          else
+            alias=$(echo "$GITHUB_REF_NAME" | tr 'A-Z' 'a-z' | sed -E 's/[^a-z0-9-]+/-/g; s/^-+|-+$//g' | cut -c1-30)
+            npx --yes wrangler@4 versions upload --preview-alias "$alias" --message "$msg" 2>&1 | tee deploy.log
+          fi
+          url=$(grep -oE 'https://[a-z0-9.-]+\.workers\.dev' deploy.log | tail -1 || true)
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Publish status report
+        if: always()
+        env:
+          PROJECT: speranza-atlas
+          MISSING: ${{ steps.cfg.outputs.missing }}
+          BUILD: ${{ steps.build.outcome }}
+          DATA: ${{ steps.data.outcome }}
+          DEPLOY: ${{ steps.deploy.outcome }}
+          URL: ${{ steps.deploy.outputs.url }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          [ -f deploy.log ] || echo "(deploy step did not run)" > deploy.log
+          node -e '
+            const e = process.env, ok = s => s === "success";
+            const result = !ok(e.BUILD) ? "build-failed" : !ok(e.DATA) ? "data-check-failed"
+              : e.MISSING ? "not-deployed-missing-settings" : ok(e.DEPLOY) ? "deployed" : "deploy-failed";
+            const status = {
+              result, branch: e.GITHUB_REF_NAME, commit: e.GITHUB_SHA,
+              finishedAt: new Date().toISOString(), project: e.PROJECT || null,
+              missingSettings: e.MISSING || null, deploymentUrl: e.URL || null,
+              steps: { build: e.BUILD, dataCheck: e.DATA, deploy: e.DEPLOY || "skipped" },
+              runUrl: e.RUN_URL,
+            };
+            require("fs").writeFileSync("status.json", JSON.stringify(status, null, 2) + "\n");
+            console.log(JSON.stringify(status, null, 2));
+          '
+          tail -n 200 deploy.log > deploy-tail.log
+          mkdir -p /tmp/report/deploy-status && cp status.json /tmp/report/deploy-status/
+          cp deploy-tail.log /tmp/report/deploy-status/deploy.log
+          cd /tmp/report
+          git init -q -b deploy-status
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A && git commit -q -m "Deploy status for ${GITHUB_SHA::7} on ${GITHUB_REF_NAME}"
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" deploy-status

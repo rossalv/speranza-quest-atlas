@@ -1,0 +1,10 @@
+// Cloudflare Worker that serves the website (static assets only).
+// It was created with Cloudflare Drop and renamed to speranza-atlas.
+// The custom domain speranzaquestmap.us is attached in the Cloudflare dashboard.
+{
+  "name": "speranza-atlas",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist-web"
+  }
+}

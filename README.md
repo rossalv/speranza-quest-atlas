@@ -18,9 +18,11 @@ npm run ios       # sync into the iOS project and open Xcode (macOS only)
 ## Website (speranzaquestmap.us)
 
 Pushing to `main` deploys the site automatically through
-`.github/workflows/deploy-site.yml` (GitHub Actions → Cloudflare Pages). Pushing any
-other branch makes a preview URL instead. The workflow needs two secrets and one
-variable; the setup is at the top of that file.
+`.github/workflows/deploy-site.yml` (GitHub Actions → the Cloudflare Worker
+`speranza-atlas`, configured in `wrangler.jsonc`). Pushing any other branch makes a
+preview URL instead. The workflow needs two secrets; the setup is at the top of
+that file. Each run's result is written to the `deploy-status` branch, and the live
+site serves `/version.json` with the commit it was built from.
 
 `npm run web` builds the same site locally into `dist-web/` and
 `speranza-quest-atlas-web.zip` (manual drag-and-drop fallback).

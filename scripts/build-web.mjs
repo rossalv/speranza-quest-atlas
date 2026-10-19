@@ -20,9 +20,19 @@ html = html.replace(
 writeFileSync("dist-web/index.html", html);
 for (const f of ["icon-180.png", "icon-192.png"]) copyFileSync(`assets/web/${f}`, `dist-web/${f}`);
 
+// version.json: which commit the live site was built from (used to confirm deploys).
+import { execSync } from "node:child_process";
+let commit = process.env.GITHUB_SHA || "";
+if (!commit) { try { commit = execSync("git rev-parse HEAD").toString().trim(); } catch (e) {} }
+const data = JSON.parse(readFileSync("dist-web/data/quests.json", "utf8"));
+writeFileSync("dist-web/version.json", JSON.stringify({
+  commit, builtAt: new Date().toISOString(), dataVersion: data.version,
+}, null, 2) + "\n");
+
 // Long cache for fonts/libraries, always-fresh quest data.
 writeFileSync("dist-web/_headers",
   "/fonts/*\n  Cache-Control: public, max-age=31536000, immutable\n" +
   "/vendor/*\n  Cache-Control: public, max-age=604800\n" +
-  "/data/*\n  Cache-Control: no-cache\n  Access-Control-Allow-Origin: *\n");
+  "/data/*\n  Cache-Control: no-cache\n  Access-Control-Allow-Origin: *\n" +
+  "/version.json\n  Cache-Control: no-cache\n");
 console.log("built dist-web/");
