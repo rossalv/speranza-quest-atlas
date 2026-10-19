@@ -80,7 +80,69 @@ No wiki page, two other sources:
 - when-everything-falls: ArcTracker (Spaceport) + Destructoid and KeenGamer walkthroughs
 - empathetic-prototypes: ArcTracker (Spaceport) + objectives name the Spaceport Trench
 
-## Any map (22 quests, `m: []`)
+## Blue Gate (21 quests)
+
+Wiki Location includes (The) Blue Gate for all except home-to-roost and
+the-first-nomads, whose wiki pages didn't load (sources below).
+
+Objectives name Blue Gate directly: armored-transports, bees, groundbreaking,
+back-on-top, wires-crossed, the-clean-dream
+
+ArcTracker lists Blue Gate: a-first-foothold, a-path-not-yours, a-prime-specimen
+(description), clamoring-for-attention, keeping-an-eye-out, with-a-trace, a-better-use,
+paving-the-way
+
+Walkthrough guide: outstanding-balance, a-dead-end (KeenGamer); reduced-to-rubble
+(GamesFuze); dormant-barons (FDayTalk); to-the-skies (KeenGamer, probe/courier scans)
+
+No wiki page: home-to-roost (ArcTracker + objectives "Blue Gate tunnels");
+the-first-nomads (ArcTracker + objectives "Security Wing in Blue Gate")
+
+## Stella Montis (13 quests)
+
+Wiki Location Stella Montis, except movie-night (wiki says Any, see below) and
+someone-elses-shoes / the-first-nomads (no wiki page).
+
+Objectives name Stella Montis: in-my-image, taking-stock
+
+ArcTracker lists Stella Montis: on-deaf-ears, snap-and-salvage, stable-housing,
+cold-storage, fragmented-logs (description), furtive-meetings (Seed Vault and Medical
+Research Area are on Stella Montis)
+
+Walkthrough guide: with-a-view (Shacknews); last-entry (Destructoid: near the Seed
+Vault, which ArcTracker places on Stella Montis)
+
+No wiki page / wiki disagrees:
+- movie-night: wiki says Any, but the objective "On Stella Montis, search the Cultural
+  Archives" and ArcTracker both say Stella Montis. Tagged Stella Montis.
+- someone-elses-shoes: ArcTracker + objectives "Scan any Android on Stella Montis"
+- the-first-nomads: ArcTracker + objectives "On Stella Montis, head to the
+  Communications wing"
+
+## Spaceport (extra)
+
+- the-first-nomads: ArcTracker lists Spaceport; its "Hidden Bunker" step is on Spaceport
+  (Dexerto Hidden Bunker guide). Tagged Spaceport, Blue Gate, Stella Montis.
+
+## Riven Tides (6 quests)
+
+Wiki Location Riven Tides for all.
+- celestes-teenage-rebellion: objectives name Riven Tides harbor
+- battening-down, celestes-childhood-drawings, shoring-up-defenses: ArcTracker
+- safe-harbor: Destructoid walkthrough
+- to-the-skies: KeenGamer (probe/courier scans)
+
+## Pendola Pass (8 quests)
+
+Wiki Location Pendola Pass for all.
+- exploring-pendola-pass, tracks-of-the-beast: objectives/name name Pendola Pass
+- bait-fetch-blast, belly-of-the-beast, clean-hands, divided, sizing-things-up: ArcTracker
+- ruins-and-reverberations: Destructoid walkthrough
+
+## Any map (23 quests, `m: []`)
+
+nothing-ventured is also any map: its kills (Comets, Rocketeers, Sentinels) work
+anywhere, though two late steps name Buried City and Stella Montis.
 
 Wiki Location "Any", and the objectives name no place (kill/loot/search anywhere):
 picking-up-the-pieces, clearer-skies, trash-into-treasure, off-the-raider,
@@ -91,9 +153,13 @@ out-of-the-shadows, settled-in-full, test-case
 
 ## Open questions
 
-- boarding-the-frigate, disrupting-the-frigate: wiki Location is "Frigate", not a map.
-  Need to find which maps the Frigate appears on.
-- nothing-gained: wiki page didn't load; objectives are boss kills (Matriarch, Queen),
-  which only spawn on some maps.
-- Wiki Location for the other maps, gathered during the Dam pass (still needs a
-  second source each), is a starting point for the next passes.
+These three stay untagged on purpose. They depend on a live map condition rather than
+a map, so the site lists them under "Needs a map condition":
+- boarding-the-frigate, disrupting-the-frigate: the ARC Frigate is a map condition.
+  games.gg says it can show up on the six outdoor maps (not Stella Montis); no second
+  source yet.
+- nothing-gained: Matriarch and Queen kills. The Matriarch only spawns during a
+  Matriarch event (Prima Games: Dam Battlegrounds, Spaceport); the Queen guards the
+  Harvester event.
+- Possible later: the arcmaps.com event feed (used by the Project's arc_timers.py)
+  lists which maps currently host each condition.

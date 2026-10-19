@@ -161,3 +161,10 @@ a.ext{display:inline-flex;align-items:center;min-height:32px;padding:4px 10px;bo
   background:var(--bg);color:var(--ink);font:500 13px var(--f-body);text-decoration:none}
 a.ext:hover{border-color:var(--ink)}
 a.ext:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+/* --- Plan a raid by map --- */
+.maprow{flex-basis:100%}
+.mlbl{font:500 11px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-right:2px}
+.tchip.mchip[aria-pressed="false"]{opacity:1;text-decoration:none}
+.tchip.mchip[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.tchip.mchip[aria-pressed="true"] .q{color:var(--panel);opacity:.8}

@@ -31,7 +31,7 @@ links, never rename), `n` name, `t` trader (Shani, Celeste, Apollo, Tian Wen, La
 Nomadic Envoy), `p` prerequisite ids, `o` objectives, `r` rewards
 `[name, qty, rarity, category]`, `q` items to bring, `g` items given on accept, `x` XP,
 `one` must be done in one raid, `m` maps the quest can be progressed on (`[]` = any map;
-missing = not researched yet). Map names: Dam Battlegrounds, Buried City, Spaceport,
+missing = depends on a map condition like the Frigate, shown as "needs a map condition"). Map names: Dam Battlegrounds, Buried City, Spaceport,
 Blue Gate, Stella Montis, Riven Tides, Pendola Pass. Sources for each tag are in
 `research/quest-maps.md`; the deploy rejects any other map name.
 

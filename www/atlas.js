@@ -17,7 +17,10 @@ function ancestors(i,s=new Set()){Q[i].p.forEach(p=>{if(!s.has(p)){s.add(p);ance
 // Unfinished quests still in the way; a done quest implies its own chain is done.
 function pending(i,s=new Set()){Q[i].p.forEach(p=>{if(!done.has(p)&&!s.has(p)){s.add(p);pending(p,s)}});return s}
 
-let shown=new Set(Object.keys(TR)),goodOnly=false,availOnly=false,sel=null,fromItems=false;
+let shown=new Set(Object.keys(TR)),goodOnly=false,availOnly=false,sel=null,fromItems=false,mapSel=null;
+// Raid planning: quests with progress on the picked map. m=[] means any map; no m means
+// it depends on a map condition (Frigate, Matriarch...), so it never matches a single map.
+const onMap=(i,m=mapSel)=>!m||(Array.isArray(Q[i].m)&&(Q[i].m.length===0||Q[i].m.includes(m)));
 const NS="http://www.w3.org/2000/svg",world=document.getElementById("world"),svg=document.getElementById("map"),panel=document.getElementById("panel");
 function el(n,a,p){const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);p&&p.appendChild(e);return e}
 
@@ -37,8 +40,8 @@ function trunc(s,n){return s.length>n?s.slice(0,n-1)+"…":s}
 function draw(){
   world.innerHTML="";
   const route=sel?ancestors(sel):null;
-  const vis=i=>shown.has(Q[i].t)&&(!goodOnly||Q[i].tier)&&(!availOnly||avail(i));
-  const filtering=shown.size<6||goodOnly||availOnly;
+  const vis=i=>shown.has(Q[i].t)&&(!goodOnly||Q[i].tier)&&(!availOnly||avail(i))&&onMap(i);
+  const filtering=shown.size<6||goodOnly||availOnly||!!mapSel;
   world.setAttribute("class",filtering||route?"fade":"");
   const defs=el("defs",{},world);
   const mk=el("marker",{id:"ah",viewBox:"0 0 10 10",refX:"8",refY:"5",markerWidth:"6",markerHeight:"6",orient:"auto-start-reverse"},defs);
@@ -67,7 +70,8 @@ function draw(){
     else if(q.tier==="ep"){el("rect",{class:"epb",x:bx-36,y:5,width:36,height:14,rx:3},g);const b=el("text",{class:"ept",x:bx-18,y:15.5,"text-anchor":"middle"},g);b.textContent="EPIC"}
   });
   const goodLeft=DATA.filter(d=>d.tier&&!done.has(d.i)).length;
-  document.getElementById("count").textContent=`${done.size} / ${ids.length} done · ${DATA.filter(d=>avail(d.i)).length} up next · ${goodLeft} good rewards left${window.ATLAS_DATA.label?" · "+window.ATLAS_DATA.label:""}`;
+  document.getElementById("count").textContent=`${done.size} / ${ids.length} done · ${DATA.filter(d=>avail(d.i)).length} up next · ${goodLeft} good rewards left${mapSel?` · ${DATA.filter(d=>avail(d.i)&&onlyMap(d.i,mapSel)).length} up next on ${mapSel} + ${DATA.filter(d=>avail(d.i)&&anyMap(d.i)).length} any map`:""}${window.ATLAS_DATA.label?" · "+window.ATLAS_DATA.label:""}`;
+  mapCounts();
 }
 
 let v={x:0,y:0,k:1};
@@ -79,7 +83,7 @@ function fit(){const a=area();const k=Math.min(a.w/BOUNDS.w,a.h/BOUNDS.h,1.2);v.
 // too spread out for that, center on the one that leads to the most quests.
 let touched=false;
 function home(){
-  const a=area(),nx=ids.filter(i=>avail(i)&&shown.has(Q[i].t));
+  const a=area(),nx=ids.filter(i=>avail(i)&&shown.has(Q[i].t)&&onMap(i));
   if(!nx.length){fit();return}
   let x0=1/0,y0=1/0,x1=-1/0,y1=-1/0;
   nx.forEach(i=>{const P=POS[i];x0=Math.min(x0,P.x-W/2);x1=Math.max(x1,P.x+W/2);y0=Math.min(y0,P.y-H/2);y1=Math.max(y1,P.y+H/2)});
@@ -124,9 +128,21 @@ Object.keys(TR).forEach(t=>{const b=document.createElement("button");b.className
   b.onclick=()=>{shown.has(t)?shown.delete(t):shown.add(t);b.setAttribute("aria-pressed",shown.has(t));flabel();draw()};tbox.appendChild(b)});
 const gb=document.getElementById("good");gb.onclick=()=>{goodOnly=!goodOnly;gb.setAttribute("aria-pressed",goodOnly);flabel();draw()};
 const ab=document.getElementById("avail");ab.onclick=()=>{availOnly=!availOnly;ab.setAttribute("aria-pressed",availOnly);flabel();draw()};
+// Plan a raid by map: one chip per map with how many up-next quests you can progress there.
+const RAID_MAPS=["Dam Battlegrounds","Buried City","Spaceport","Blue Gate","Stella Montis","Riven Tides","Pendola Pass"];
+const mbox=document.getElementById("mapsel");
+RAID_MAPS.forEach(m=>{const b=document.createElement("button");b.className="tchip mchip";b.dataset.map=m;b.setAttribute("aria-pressed","false");
+  b.innerHTML=`${m} <span class="q"></span>`;
+  b.onclick=()=>{mapSel=mapSel===m?null:m;mbox.querySelectorAll(".mchip").forEach(c=>c.setAttribute("aria-pressed",c.dataset.map===mapSel));flabel();draw();if(!sel){touched=false;home()}};
+  mbox.appendChild(b)});
+// Chip counts only quests tied to that map; any-map quests are lit on every map but not counted.
+const anyMap=i=>Array.isArray(Q[i].m)&&Q[i].m.length===0;
+const onlyMap=(i,m)=>Array.isArray(Q[i].m)&&Q[i].m.includes(m);
+function mapCounts(){mbox.querySelectorAll(".mchip").forEach(c=>{const n=DATA.filter(d=>avail(d.i)&&onlyMap(d.i,c.dataset.map)).length;
+  c.querySelector(".q").textContent=n;c.title=`${n} up-next quest${n===1?"":"s"} on ${c.dataset.map} (any-map quests not counted)`})}
 // Phone: filters live behind this button; its label shows how many are on.
 const ft=document.getElementById("ftog"),hdr=document.querySelector("header");
-function flabel(){const n=(Object.keys(TR).length-shown.size)+(goodOnly?1:0)+(availOnly?1:0);ft.textContent=n?`Filters · ${n}`:"Filters"}
+function flabel(){const n=(Object.keys(TR).length-shown.size)+(goodOnly?1:0)+(availOnly?1:0)+(mapSel?1:0);ft.textContent=n?`Filters · ${n}`:"Filters"}
 ft.onclick=()=>{const o=!hdr.classList.contains("open");hdr.classList.toggle("open",o);ft.setAttribute("aria-expanded",o)};
 const rb=document.getElementById("reset");let armed=null;
 rb.onclick=()=>{if(armed){clearTimeout(armed);armed=null;done.clear();save();rb.textContent="Reset progress";sel?open(sel,true):(draw(),home());return}
@@ -190,9 +206,11 @@ const MAPS=[["Dam Battlegrounds","dam",/\bDam Battlegrounds\b|\bThe Dam\b/],["Bu
   ["Spaceport","spaceport",/\bSpaceport\b/],["Blue Gate","blue-gate",/\bBlue Gate\b/],["Stella Montis","stella-montis",/\bStella Montis\b/],
   ["Riven Tides","riven-tides",/\bRiven Tides\b/],["Pendola Pass","pendola-pass",/\bPendola Pass\b/]];
 function mapsIn(q){const t=[q.n,...q.o].join("\n");return MAPS.map(m=>({m,at:t.search(m[2])})).filter(x=>x.at>=0).sort((a,b)=>a.at-b.at).map(x=>x.m)}
-function mapLinks(q){const ms=mapsIn(q);
+function mapLinks(q){const t=[q.n,...q.o].join("\n");
+  const ms=Array.isArray(q.m)?MAPS.filter(m=>q.m.includes(m[0])).map(m=>({m,at:t.search(m[2])})).sort((a,b)=>(a.at<0?1e9:a.at)-(b.at<0?1e9:b.at)).map(x=>x.m):mapsIn(q);
+  const note=Array.isArray(q.m)&&!q.m.length?'<p class="note">Can be done on any map.</p>':!Array.isArray(q.m)?'<p class="note">Needs a map condition (like the Frigate or a boss event), so check what\'s active before you queue.</p>':"";
   const a=(h,t)=>`<a class="ext" href="${h}" target="_blank" rel="noopener">${t} ↗</a>`;
-  return `<div><p class="lbl">Interactive map${ms.length>1?"s":""}</p><div class="links">${
+  return `<div><p class="lbl">Interactive map${ms.length>1?"s":""}</p>${note}<div class="links"${note?' style="margin-top:6px"':""}>${
     ms.length?ms.map(([n,s])=>a(`${MF}/${s}`,n)).join(""):a(MF,"All maps on MetaForge")}</div></div>`}
 // hl: reward index to highlight (reward search). hq: bring-item index (needed-for search).
 function open(i,keep,hl,hq){sel=i;const q=Q[i],k=TR[q.t];
