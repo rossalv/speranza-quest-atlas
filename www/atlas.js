@@ -183,6 +183,17 @@ find.addEventListener("blur",()=>setTimeout(hideSugg,150));
 const RC={Common:"--r-com",Uncommon:"--r-unc",Rare:"--r-rare",Epic:"--r-epic",Legendary:"--r-leg"};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]);
 const btns=a=>a.map(i=>`<button data-go="${i}">${esc(Q[i].n)}</button>`).join("");
+// Maps named in a quest's name or objectives, in the order they come up, each linked to
+// its MetaForge interactive map (URLs checked Oct 18, 2026). No map named → the map index.
+const MF="https://metaforge.app/arc-raiders/map";
+const MAPS=[["Dam Battlegrounds","dam",/\bDam Battlegrounds\b|\bThe Dam\b/],["Buried City","buried-city",/\bBuried City\b/],
+  ["Spaceport","spaceport",/\bSpaceport\b/],["Blue Gate","blue-gate",/\bBlue Gate\b/],["Stella Montis","stella-montis",/\bStella Montis\b/],
+  ["Riven Tides","riven-tides",/\bRiven Tides\b/],["Pendola Pass","pendola-pass",/\bPendola Pass\b/]];
+function mapsIn(q){const t=[q.n,...q.o].join("\n");return MAPS.map(m=>({m,at:t.search(m[2])})).filter(x=>x.at>=0).sort((a,b)=>a.at-b.at).map(x=>x.m)}
+function mapLinks(q){const ms=mapsIn(q);
+  const a=(h,t)=>`<a class="ext" href="${h}" target="_blank" rel="noopener">${t} ↗</a>`;
+  return `<div><p class="lbl">Interactive map${ms.length>1?"s":""}</p><div class="links">${
+    ms.length?ms.map(([n,s])=>a(`${MF}/${s}`,n)).join(""):a(MF,"All maps on MetaForge")}</div></div>`}
 // hl: reward index to highlight (reward search). hq: bring-item index (needed-for search).
 function open(i,keep,hl,hq){sel=i;const q=Q[i],k=TR[q.t];
   const st=done.has(i)?"Done":avail(i)?"Up next":"Locked";
@@ -203,8 +214,8 @@ function open(i,keep,hl,hq){sel=i;const q=Q[i],k=TR[q.t];
   ${q.unl.length?`<div><p class="lbl">Unlocks</p><div class="links">${btns(q.unl)}</div></div>`:""}
   <div class="row"><button class="donebtn" id="tog" aria-pressed="${done.has(i)}">${done.has(i)?"Marked done":"Mark done"}</button>
   ${!done.has(i)&&anc.length?`<button id="here">I'm on this quest</button>`:""}</div>
-  <div class="row"><a href="https://arcraiders.wiki/wiki/Special:Search?search=${encodeURIComponent(q.n)}&go=Go" target="_blank" rel="noopener">Wiki</a>
-  <a href="https://metaforge.app/arc-raiders/map" target="_blank" rel="noopener">Interactive map</a></div>
+  ${mapLinks(q)}
+  <div class="row"><a class="ext" href="https://arcraiders.wiki/wiki/Special:Search?search=${encodeURIComponent(q.n)}&go=Go" target="_blank" rel="noopener">Wiki page ↗</a></div>
   <p class="note">Items you bring are handed in. Squad progress is shared.</p>`;
   panel.hidden=false;panel.scrollTop=0;document.getElementById("hint").hidden=true;draw();if(!keep)(focus?frameRoute(i,anc):centerOn(i));
   document.getElementById("cls").onclick=()=>{panel.hidden=true;sel=null;fromItems=false;draw()};

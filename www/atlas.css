@@ -155,3 +155,9 @@ ul.keep li{margin:0}
 .kp.got .kn{text-decoration:line-through}
 .kq{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;padding-left:28px}
 .kq button{font-size:12px;padding:3px 8px;min-height:28px;background:var(--panel)}
+
+/* --- Outbound links (maps, wiki) as tappable chips --- */
+a.ext{display:inline-flex;align-items:center;min-height:32px;padding:4px 10px;border:1px solid var(--line);border-radius:6px;
+  background:var(--bg);color:var(--ink);font:500 13px var(--f-body);text-decoration:none}
+a.ext:hover{border-color:var(--ink)}
+a.ext:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
