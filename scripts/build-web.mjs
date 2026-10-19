@@ -2,6 +2,8 @@
 // ready to drag into Cloudflare Pages ("Upload assets").
 import { cpSync, rmSync, readFileSync, writeFileSync, mkdirSync, copyFileSync } from "node:fs";
 
+const SITE = "https://speranzaquestmap.us/";
+
 rmSync("dist-web", { recursive: true, force: true });
 cpSync("www", "dist-web", { recursive: true });
 for (const f of ["capacitor.js", "haptics.js", "browser.js", "preferences.js"]) {
@@ -14,11 +16,22 @@ html = html.replace(
   '<link rel="stylesheet" href="atlas.css">',
   '<link rel="stylesheet" href="atlas.css">\n' +
   '<meta name="description" content="Every Arc Raiders quest on one map, linked by prerequisite. Unofficial fan-made tracker.">\n' +
+  // Link previews (Discord, iMessage, Slack, X). Image is made from assets/web/og-card.html.
+  '<meta property="og:type" content="website">\n' +
+  '<meta property="og:site_name" content="Speranza Quest Atlas">\n' +
+  '<meta property="og:title" content="Speranza Quest Atlas">\n' +
+  '<meta property="og:description" content="Every Arc Raiders quest on one map. See what unlocks what, track what you have done, and share progress with your squad.">\n' +
+  `<meta property="og:url" content="${SITE}">\n` +
+  `<meta property="og:image" content="${SITE}og.png">\n` +
+  '<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">\n' +
+  '<meta property="og:image:alt" content="Speranza Quest Atlas: a map of linked quest cards">\n' +
+  '<meta name="twitter:card" content="summary_large_image">\n' +
+  '<meta name="theme-color" content="#131816">\n' +
   '<link rel="icon" type="image/png" href="icon-192.png">\n' +
   '<link rel="apple-touch-icon" href="icon-180.png">'
 );
 writeFileSync("dist-web/index.html", html);
-for (const f of ["icon-180.png", "icon-192.png"]) copyFileSync(`assets/web/${f}`, `dist-web/${f}`);
+for (const f of ["icon-180.png", "icon-192.png", "og.png"]) copyFileSync(`assets/web/${f}`, `dist-web/${f}`);
 
 // version.json: which commit the live site was built from (used to confirm deploys).
 import { execSync } from "node:child_process";

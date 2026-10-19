@@ -1,0 +1,36 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+@font-face{font-family:CP;font-weight:600;src:url(fonts/chakra-petch-600.woff2)}
+@font-face{font-family:PS;font-weight:400;src:url(fonts/ibm-plex-sans-400.woff2)}
+@font-face{font-family:PM;font-weight:500;src:url(fonts/ibm-plex-mono-500.woff2)}
+html,body{margin:0}
+body{width:1200px;height:630px;background:#131816;color:#e3e8e1;position:relative;overflow:hidden;
+ background-image:radial-gradient(#212926 1.5px,transparent 1.5px);background-size:26px 26px}
+.txt{position:absolute;left:72px;top:96px;width:520px}
+h1{font:600 64px/1.05 CP;margin:0 0 22px;letter-spacing:.01em}
+p{font:400 27px/1.4 PS;color:#b9c3bb;margin:0}
+.tag{position:absolute;left:72px;bottom:64px;font:500 18px PM;letter-spacing:.08em;text-transform:uppercase;color:#98a39a}
+.tag b{color:#7fb0ff;font-weight:500}
+svg{position:absolute;right:0;top:0}
+.n rect.c{stroke-width:3} .n text{font:500 14px PM;letter-spacing:.06em} .n .t{font:600 20px CP;letter-spacing:0}
+</style></head><body>
+<div class="txt"><h1>Speranza Quest Atlas</h1><p>Every Arc Raiders quest on one map. See what unlocks what, and what's up next.</p></div>
+<div class="tag"><b>speranzaquestmap.us</b> · unofficial fan-made tracker</div>
+<svg width="640" height="630" viewBox="0 0 640 630" id="g"></svg>
+<script>
+const C={sh:["#ee8a6f","#3d1c14","#fbd3c6"],ce:["#3fc2ad","#0e332e","#bff0e6"],ap:["#7aa8f0","#15284a","#d2e2fb"],tw:["#e2a83a","#38290d","#f6dca6"],la:["#d989c7","#3a1733","#f6d5ee"],ca:["#b2c66a","#2a3312","#e6efc6"]};
+const N=[["a",300,70,"sh","SHANI","Off The Radar","done"],["b",150,210,"ce","CELESTE","A Bad Feeling","done"],["c",450,210,"ca","NOMADIC ENVOY","Clean Hands","done"],
+["d",60,350,"tw","TIAN WEN","The Right Tool","next"],["e",300,350,"ap","APOLLO","Safe Passage","next"],["f",540,350,"ca","NOMADIC ENVOY","Taking Stock","next"],
+["g",180,490,"la","LANCE","In My Image",""],["h",420,490,"ca","NOMADIC ENVOY","A Path Not Yours",""]];
+const E=[["a","b"],["a","c"],["b","d"],["b","e"],["c","f"],["b","g"],["f","h"]];
+N.forEach(n=>{n[1]=330+(n[1]-300)*.88;n[2]=n[2]+18});const P={};N.forEach(n=>P[n[0]]=n);const s=document.getElementById("g");let h="";const w=184,ht=74;
+E.forEach(([u,v])=>{const a=P[u],b=P[v];const y1=a[2]+ht/2,y2=b[2]-ht/2,m=(y1+y2)/2;
+ h+=`<path d="M${a[1]} ${y1} C${a[1]} ${m} ${b[1]} ${m} ${b[1]} ${y2}" fill="none" stroke="${a[6]==="done"?"#e3e8e1":"#58625b"}" stroke-width="2.5" opacity="${a[6]==="done"?.8:1}"/>`});
+N.forEach(([id,x,y,k,tr,name,st])=>{const [c,bg,ink]=C[k];const X=x-w/2,Y=y-ht/2;
+ h+=`<g class="n" opacity="${st===""?.55:1}">`;
+ if(st==="next")h+=`<rect x="${X-7}" y="${Y-7}" width="${w+14}" height="${ht+14}" rx="13" fill="none" stroke="#7fb0ff" stroke-width="3"/>`;
+ h+=`<rect class="c" x="${X}" y="${Y}" width="${w}" height="${ht}" rx="9" fill="${bg}" stroke="${c}" ${st==="done"?'stroke-dasharray="7 5"':""}/>`;
+ h+=`<text x="${X+14}" y="${Y+26}" fill="${ink}">${tr}</text><text class="t" x="${X+14}" y="${Y+53}" fill="${ink}">${name}</text>`;
+ if(st==="done")h+=`<circle cx="${X+w-20}" cy="${Y+20}" r="10" fill="#7cc365"/><path d="M${X+w-25} ${Y+20}l3.5 3.5 6.5-7" fill="none" stroke="#1b211f" stroke-width="2.5"/>`;
+ h+="</g>"});
+s.innerHTML=h;
+</script></body></html>
