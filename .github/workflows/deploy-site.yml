@@ -78,6 +78,9 @@ jobs:
             const bad = d.quests.flatMap(q => q.p.filter(p => !ids.has(p)).map(p => `${q.n} -> ${p}`));
             if (!d.version || d.quests.length < 50) throw new Error("quests.json looks empty or has no version");
             if (bad.length) throw new Error("Prerequisites pointing at missing quests:\n" + bad.join("\n"));
+            const MAPS = new Set(["Dam Battlegrounds","Buried City","Spaceport","Blue Gate","Stella Montis","Riven Tides","Pendola Pass"]);
+            const badMap = d.quests.flatMap(q => q.m === undefined ? [] : !Array.isArray(q.m) ? [`${q.n}: m is not a list`] : q.m.filter(m => !MAPS.has(m)).map(m => `${q.n} -> ${m}`));
+            if (badMap.length) throw new Error("Unknown map names:\n" + badMap.join("\n"));
             console.log(`OK: ${d.quests.length} quests, data version ${d.version}`);
           '
 

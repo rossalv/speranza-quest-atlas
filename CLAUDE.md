@@ -30,7 +30,10 @@ Ideas and priorities for new work are in `ROADMAP.md`. Update it when something 
 links, never rename), `n` name, `t` trader (Shani, Celeste, Apollo, Tian Wen, Lance,
 Nomadic Envoy), `p` prerequisite ids, `o` objectives, `r` rewards
 `[name, qty, rarity, category]`, `q` items to bring, `g` items given on accept, `x` XP,
-`one` must be done in one raid.
+`one` must be done in one raid, `m` maps the quest can be progressed on (`[]` = any map;
+missing = not researched yet). Map names: Dam Battlegrounds, Buried City, Spaceport,
+Blue Gate, Stella Montis, Riven Tides, Pendola Pass. Sources for each tag are in
+`research/quest-maps.md`; the deploy rejects any other map name.
 
 When the data changes: bump `version` (ISO date, e.g. `2026-11-04`, add `.1` for a
 second change that day), update `label` (shown in the header, e.g.
