@@ -15,8 +15,10 @@
       <h1>Speranza Quest Atlas</h1>
       <span class="meta" id="count"></span>
       <div class="tools">
-        <input type="search" id="find" placeholder="Find a quest" list="qlist" aria-label="Find a quest">
-        <datalist id="qlist"></datalist>
+        <div class="findbox">
+          <input type="search" id="find" placeholder="Find a quest or reward" aria-label="Find a quest or reward" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="sugg">
+          <div id="sugg" class="sugg" role="listbox" hidden></div>
+        </div>
         <button id="zin" aria-label="Zoom in">+</button>
         <button id="zout" aria-label="Zoom out">−</button>
         <button id="fit">Fit</button>

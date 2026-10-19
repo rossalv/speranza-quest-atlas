@@ -88,6 +88,16 @@ function home(){
   const best=nx.reduce((b,i)=>descendants(i).size>descendants(b).size?i:b,nx[0]),P=POS[best];
   v.k=a.w<700?Math.min(1,a.w/(W*1.5)):.8;v.x=a.w/2-P.x*v.k;v.y=a.h*.2-P.y*v.k;apply();
 }
+// Remaining quests in play order (top of the tree first).
+function pathOrder(list){return [...list].sort((a,b)=>POS[a].y-POS[b].y||POS[a].x-POS[b].x)}
+// Show the whole remaining route if it fits at a readable size, else center on the quest.
+function frameRoute(i,anc){
+  const a=area(),list=[i,...anc];let x0=1/0,y0=1/0,x1=-1/0,y1=-1/0;
+  list.forEach(j=>{const P=POS[j];x0=Math.min(x0,P.x-W/2);x1=Math.max(x1,P.x+W/2);y0=Math.min(y0,P.y-H/2);y1=Math.max(y1,P.y+H/2)});
+  const pad=30,bw=x1-x0+pad*2,bh=y1-y0+pad*2,k=Math.min(a.w/bw,a.h/bh,1);
+  if(k<.45){centerOn(i);return}
+  v.k=k;v.x=(a.w-bw*k)/2-(x0-pad)*k;v.y=(a.h-bh*k)/2-(y0-pad)*k;apply();
+}
 function centerOn(i){const a=area(),P=POS[i];if(v.k<.75)v.k=.75;v.x=a.w/2-P.x*v.k;v.y=a.h/2-P.y*v.k;apply()}
 
 const ptrs=new Map();let moved=0,downId=null,pinch=null;
@@ -121,26 +131,64 @@ ft.onclick=()=>{const o=!hdr.classList.contains("open");hdr.classList.toggle("op
 const rb=document.getElementById("reset");let armed=null;
 rb.onclick=()=>{if(armed){clearTimeout(armed);armed=null;done.clear();save();rb.textContent="Reset progress";sel?open(sel,true):(draw(),home());return}
   rb.textContent="Tap again to reset";armed=setTimeout(()=>{armed=null;rb.textContent="Reset progress"},3000)};
-const dl=document.getElementById("qlist");DATA.slice().sort((a,b)=>a.n.localeCompare(b.n)).forEach(d=>{const o=document.createElement("option");o.value=d.n;dl.appendChild(o)});
-const find=document.getElementById("find");
-function doFind(){const s=find.value.trim().toLowerCase();if(!s)return;const d=DATA.find(x=>x.n.toLowerCase()===s)||DATA.find(x=>x.n.toLowerCase().includes(s));if(d){find.blur();open(d.i)}}
-find.addEventListener("change",doFind);find.addEventListener("keydown",e=>{if(e.key==="Enter")doFind()});
+// ---- Search: quests and rewards ----
+// Word-prefix match on every word typed, so "hull bp" finds "Hullcracker Blueprint".
+const norm=s=>String(s).toLowerCase().replace(/[’']/g,"").replace(/[^a-z0-9]+/g," ").trim();
+const ALIAS={bp:"blueprint",bps:"blueprint",blueprints:"blueprint"};
+const tokens=s=>norm(s).split(" ").filter(Boolean).map(t=>ALIAS[t]||t);
+const RANK={Legendary:5,Epic:4,Rare:3,Uncommon:2,Common:1};
+const REW=[];DATA.forEach(d=>d.r.forEach((r,ri)=>REW.push({q:d.i,ri,r,n:norm(r[0])})));
+function matches(t,n){const w=n.split(" ");return t.every(x=>w.some(y=>y.startsWith(x)))}
+function search(s){
+  const t=tokens(s);if(!t.length)return{qs:[],rs:[]};const ns=norm(s);
+  const qs=DATA.filter(d=>matches(t,norm(d.n))||norm(d.n).includes(ns))
+    .sort((a,b)=>(norm(b.n)===ns)-(norm(a.n)===ns)||norm(b.n).startsWith(ns)-norm(a.n).startsWith(ns)||a.n.localeCompare(b.n)).slice(0,6);
+  const rs=REW.filter(x=>matches(t,x.n))
+    .sort((a,b)=>(b.n===ns)-(a.n===ns)||(b.r[3]==="Blueprint")-(a.r[3]==="Blueprint")||(RANK[b.r[2]]||0)-(RANK[a.r[2]]||0)||a.r[0].localeCompare(b.r[0])||Q[a.q].n.localeCompare(Q[b.q].n)).slice(0,10);
+  return{qs,rs};
+}
+const find=document.getElementById("find"),sugg=document.getElementById("sugg");
+let hits=[],cur=-1;
+function showSugg(){
+  const s=find.value.trim();if(!s){hideSugg();return}
+  const{qs,rs}=search(s);hits=[];let h="";
+  const qst=i=>done.has(i)?"done":avail(i)?"up next":"locked";
+  if(qs.length){h+='<div class="sgh">Quests</div>';qs.forEach(d=>{hits.push({q:d.i});h+=`<button class="sg" role="option" data-k="${hits.length-1}"><span class="a">${esc(d.n)}</span><span class="b">${esc(d.t)} · ${qst(d.i)}</span></button>`})}
+  if(rs.length){h+='<div class="sgh">Rewards</div>';rs.forEach(x=>{hits.push({q:x.q,ri:x.ri});const bp=x.r[3]==="Blueprint";
+    h+=`<button class="sg" role="option" data-k="${hits.length-1}"><span class="a">${esc(x.r[0])}${x.r[1]>1?` <span class="q">×${x.r[1]}</span>`:""}${bp?' <span class="bdg bp">BP</span>':""}</span><span class="b">from ${esc(Q[x.q].n)} · ${esc(Q[x.q].t)} · ${qst(x.q)}</span></button>`})}
+  if(!hits.length)h='<div class="sgnone">No quests or rewards match.</div>';
+  sugg.innerHTML=h;sugg.hidden=false;find.setAttribute("aria-expanded","true");cur=hits.length?0:-1;mark();
+}
+function hideSugg(){sugg.hidden=true;find.setAttribute("aria-expanded","false");cur=-1}
+function mark(){sugg.querySelectorAll(".sg").forEach(b=>b.classList.toggle("on",+b.dataset.k===cur));const on=sugg.querySelector(".sg.on");on&&on.scrollIntoView({block:"nearest"})}
+function pick(k){const x=hits[k];if(!x)return;hideSugg();find.blur();open(x.q,false,x.ri)}
+find.addEventListener("input",showSugg);
+find.addEventListener("focus",()=>{if(find.value.trim())showSugg()});
+find.addEventListener("keydown",e=>{
+  if(e.key==="ArrowDown"&&hits.length){e.preventDefault();if(sugg.hidden)showSugg();cur=(cur+1)%hits.length;mark()}
+  else if(e.key==="ArrowUp"&&hits.length){e.preventDefault();cur=(cur-1+hits.length)%hits.length;mark()}
+  else if(e.key==="Enter"){e.preventDefault();if(sugg.hidden)showSugg();pick(cur<0?0:cur)}
+  else if(e.key==="Escape"){hideSugg()}});
+sugg.addEventListener("pointerdown",e=>e.preventDefault()); // keep focus so the tap registers
+sugg.addEventListener("click",e=>{const b=e.target.closest(".sg");if(b)pick(+b.dataset.k)});
+find.addEventListener("blur",()=>setTimeout(hideSugg,150));
 
 const RC={Common:"--r-com",Uncommon:"--r-unc",Rare:"--r-rare",Epic:"--r-epic",Legendary:"--r-leg"};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]);
 const btns=a=>a.map(i=>`<button data-go="${i}">${esc(Q[i].n)}</button>`).join("");
-function open(i,keep){sel=i;const q=Q[i],k=TR[q.t];
+function open(i,keep,hl){sel=i;const q=Q[i],k=TR[q.t];
   const st=done.has(i)?"Done":avail(i)?"Up next":"Locked";
   const anc=[...pending(i)];
   panel.innerHTML=`
   <div class="row"><div class="chips"><span class="chip" style="background:var(--${k}-bg);color:var(--${k}-ink);border-color:var(--${k})">${q.t}</span><span class="chip">${st}</span>${q.one?'<span class="chip">One raid</span>':""}${q.tier==="bp"?'<span class="bdg bp">BP</span>':q.tier==="ep"?'<span class="bdg ep">EPIC</span>':""}</div>
   <button class="close" id="cls">Close</button></div>
   <h2>${esc(q.n)}</h2>
-  ${!done.has(i)?`<p class="route">${anc.length?`<strong>${anc.length}</strong> quest${anc.length>1?"s":""} left before this unlocks. The route is highlighted on the map.`:"Available now."}</p>`:""}
+  ${hl!=null&&q.r[hl]?`<p class="note">Reward <strong>${esc(q.r[hl][0])}</strong> comes from this quest.</p>`:""}
+  ${!done.has(i)?(anc.length?`<details class="path"${hl!=null?" open":""}><summary><strong>${anc.length}</strong> quest${anc.length>1?"s":""} left before this unlocks. The route is highlighted on the map.</summary><ol>${pathOrder(anc).map(a=>`<li><button data-go="${a}">${esc(Q[a].n)}</button> <span class="q">${esc(Q[a].t)}</span></li>`).join("")}</ol></details>`:'<p class="route">Available now.</p>'):""}
   <div><p class="lbl">Objectives</p><ol>${q.o.map(o=>`<li>${esc(o)}</li>`).join("")}</ol>${q.one?'<p class="note" style="margin-top:6px">Everything has to be done in a single raid.</p>':""}</div>
   ${q.q.length?`<div><p class="lbl">Bring</p><ul>${q.q.map(r=>`<li>${r[1]}× ${esc(r[0])}</li>`).join("")}</ul></div>`:""}
   ${q.g.length?`<div><p class="lbl">Given on accept</p><ul>${q.g.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:""}
-  <div><p class="lbl">Rewards</p><ul class="rw">${q.r.map(r=>`<li><span class="rar" style="color:var(${RC[r[2]]||"--muted"})">${esc(r[2]||r[3])}</span><span>${esc(r[0])}${r[3]==="Blueprint"?' <span class="bdg bp">BP</span>':""}</span><span class="q">×${r[1]}</span></li>`).join("")}${q.x?`<li><span class="rar" style="color:var(--muted)">XP</span><span class="q">${q.x.toLocaleString()}</span></li>`:""}</ul></div>
+  <div><p class="lbl">Rewards</p><ul class="rw">${q.r.map((r,ri)=>`<li${ri===hl?' class="hit"':""}><span class="rar" style="color:var(${RC[r[2]]||"--muted"})">${esc(r[2]||r[3])}</span><span>${esc(r[0])}${r[3]==="Blueprint"?' <span class="bdg bp">BP</span>':""}</span><span class="q">×${r[1]}</span></li>`).join("")}${q.x?`<li><span class="rar" style="color:var(--muted)">XP</span><span class="q">${q.x.toLocaleString()}</span></li>`:""}</ul></div>
   ${q.p.length?`<div><p class="lbl">Requires${q.p.length>1?" (all)":""}</p><div class="links">${btns(q.p)}</div></div>`:""}
   ${q.unl.length?`<div><p class="lbl">Unlocks</p><div class="links">${btns(q.unl)}</div></div>`:""}
   <div class="row"><button class="donebtn" id="tog" aria-pressed="${done.has(i)}">${done.has(i)?"Marked done":"Mark done"}</button>
@@ -148,7 +196,7 @@ function open(i,keep){sel=i;const q=Q[i],k=TR[q.t];
   <div class="row"><a href="https://arcraiders.wiki/wiki/Special:Search?search=${encodeURIComponent(q.n)}&go=Go" target="_blank" rel="noopener">Wiki</a>
   <a href="https://metaforge.app/arc-raiders/map" target="_blank" rel="noopener">Interactive map</a></div>
   <p class="note">Quest items aren't consumed, and squad progress is shared.</p>`;
-  panel.hidden=false;document.getElementById("hint").hidden=true;draw();if(!keep)centerOn(i);
+  panel.hidden=false;document.getElementById("hint").hidden=true;draw();if(!keep)(hl!=null?frameRoute(i,anc):centerOn(i));
   document.getElementById("cls").onclick=()=>{panel.hidden=true;sel=null;draw()};
   document.getElementById("tog").onclick=()=>{done.has(i)?done.delete(i):done.add(i);save();open(i,true)};
   const h=document.getElementById("here");if(h)h.onclick=()=>{ancestors(i).forEach(a=>done.add(a));save();open(i,true)};
