@@ -15,11 +15,15 @@ npm run serve     # browser preview at http://localhost:8080
 npm run ios       # sync into the iOS project and open Xcode (macOS only)
 ```
 
-## Website version
+## Website (speranzaquestmap.us)
 
-`npm run web` builds the plain website (no iPhone plugins) into `dist-web/` and
-`speranza-quest-atlas-web.zip`. Drag the zip into Cloudflare Pages → Upload assets.
-The site also serves `data/quests.json`, so its URL can be the app's `dataUrl`.
+Pushing to `main` deploys the site automatically through
+`.github/workflows/deploy-site.yml` (GitHub Actions → Cloudflare Pages). Pushing any
+other branch makes a preview URL instead. The workflow needs two secrets and one
+variable; the setup is at the top of that file.
+
+`npm run web` builds the same site locally into `dist-web/` and
+`speranza-quest-atlas-web.zip` (manual drag-and-drop fallback).
 
 ## Update quest data after a patch
 

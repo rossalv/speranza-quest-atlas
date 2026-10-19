@@ -1,0 +1,79 @@
+# Builds the website and deploys it to the existing Cloudflare Pages project
+# behind speranzaquestmap.us.
+#   push to main        -> production (speranzaquestmap.us)
+#   push to any branch  -> preview URL (<branch>.<project>.pages.dev)
+#
+# One-time setup in GitHub → repo Settings → Secrets and variables → Actions:
+#   Secret   CLOUDFLARE_API_TOKEN   (custom token: Account → Cloudflare Pages → Edit)
+#   Secret   CLOUDFLARE_ACCOUNT_ID
+#   Variable CF_PAGES_PROJECT       (the Pages project name, as shown in the dashboard)
+name: Deploy site
+
+on:
+  push:
+    paths:
+      - "www/**"
+      - "assets/web/**"
+      - "scripts/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/deploy-site.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Cloudflare settings
+        id: cfg
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PROJECT: ${{ vars.CF_PAGES_PROJECT }}
+        run: |
+          if [ -z "$TOKEN" ] || [ -z "$ACCOUNT" ] || [ -z "$PROJECT" ]; then
+            echo "::notice::Cloudflare secrets/variable not set yet, so the build ran but nothing was deployed."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Build site
+        run: |
+          npm ci --no-audit --no-fund
+          npm run vendor
+          node scripts/build-web.mjs
+
+      - name: Check quest data
+        run: |
+          node -e '
+            const d = JSON.parse(require("fs").readFileSync("dist-web/data/quests.json", "utf8"));
+            const ids = new Set(d.quests.map(q => q.i));
+            const bad = d.quests.flatMap(q => q.p.filter(p => !ids.has(p)).map(p => `${q.n} -> ${p}`));
+            if (!d.version || d.quests.length < 50) throw new Error("quests.json looks empty or has no version");
+            if (bad.length) throw new Error("Prerequisites pointing at missing quests:\n" + bad.join("\n"));
+            console.log(`OK: ${d.quests.length} quests, data version ${d.version}`);
+          '
+
+      - name: Deploy to Cloudflare Pages
+        if: steps.cfg.outputs.ready == 'true'
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist-web --project-name=${{ vars.CF_PAGES_PROJECT }} --branch=${{ github.ref_name }} --commit-dirty=true
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
