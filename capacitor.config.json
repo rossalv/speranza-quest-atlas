@@ -1,9 +1,0 @@
-{
-  "appId": "com.rossalv.speranzaquestatlas",
-  "appName": "Speranza Atlas",
-  "webDir": "www",
-  "ios": {
-    "contentInset": "never",
-    "backgroundColor": "#e8ebe3"
-  }
-}

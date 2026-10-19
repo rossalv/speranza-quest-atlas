@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="format-detection" content="telephone=no">
+<title>Speranza Quest Atlas</title>
+<link rel="stylesheet" href="atlas.css">
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="top">
+      <h1>Speranza Quest Atlas</h1>
+      <span class="meta" id="count"></span>
+      <div class="tools">
+        <input type="search" id="find" placeholder="Find a quest" list="qlist" aria-label="Find a quest">
+        <datalist id="qlist"></datalist>
+        <button id="zin" aria-label="Zoom in">+</button>
+        <button id="zout" aria-label="Zoom out">−</button>
+        <button id="fit">Fit</button>
+        <button id="about" aria-label="About this app">About</button>
+      </div>
+    </div>
+    <div class="filters">
+      <div class="row" id="traders" aria-label="Show traders"></div>
+      <button class="toggle" id="good" aria-pressed="false">Good rewards only</button>
+      <button class="toggle" id="avail" aria-pressed="false">Up next only</button>
+      <div class="legend" aria-hidden="true">
+        <span><span class="bdg bp">BP</span> blueprint</span>
+        <span><span class="bdg ep">EPIC</span> epic or legendary gear</span>
+        <span>blue outline = up next · dashed = done</span>
+      </div>
+      <button id="reset" style="margin-left:auto">Reset progress</button>
+    </div>
+  </header>
+  <div class="board">
+    <svg id="map" role="img" aria-label="Every Arc Raiders quest, linked by prerequisite"><g id="world"></g></svg>
+    <div class="hint" id="hint">Drag to pan · scroll or pinch to zoom · tap a quest for its walkthrough</div>
+    <aside id="panel" hidden aria-live="polite"></aside>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="vendor/capacitor.js"></script>
+<script src="vendor/preferences.js"></script>
+<script src="vendor/haptics.js"></script>
+<script src="vendor/browser.js"></script>
+<script src="vendor/dagre.min.js"></script>
+<script src="boot.js"></script>
+</body>
+</html>

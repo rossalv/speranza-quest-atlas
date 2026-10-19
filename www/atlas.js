@@ -119,7 +119,7 @@ const ft=document.getElementById("ftog"),hdr=document.querySelector("header");
 function flabel(){const n=(Object.keys(TR).length-shown.size)+(goodOnly?1:0)+(availOnly?1:0);ft.textContent=n?`Filters · ${n}`:"Filters"}
 ft.onclick=()=>{const o=!hdr.classList.contains("open");hdr.classList.toggle("open",o);ft.setAttribute("aria-expanded",o)};
 const rb=document.getElementById("reset");let armed=null;
-rb.onclick=()=>{if(armed){Native.tap("warning");clearTimeout(armed);armed=null;done.clear();save();rb.textContent="Reset progress";sel?open(sel,true):(draw(),home());return}
+rb.onclick=()=>{if(armed){clearTimeout(armed);armed=null;done.clear();save();rb.textContent="Reset progress";sel?open(sel,true):(draw(),home());return}
   rb.textContent="Tap again to reset";armed=setTimeout(()=>{armed=null;rb.textContent="Reset progress"},3000)};
 const dl=document.getElementById("qlist");DATA.slice().sort((a,b)=>a.n.localeCompare(b.n)).forEach(d=>{const o=document.createElement("option");o.value=d.n;dl.appendChild(o)});
 const find=document.getElementById("find");
@@ -150,33 +150,31 @@ function open(i,keep){sel=i;const q=Q[i],k=TR[q.t];
   <p class="note">Quest items aren't consumed, and squad progress is shared.</p>`;
   panel.hidden=false;document.getElementById("hint").hidden=true;draw();if(!keep)centerOn(i);
   document.getElementById("cls").onclick=()=>{panel.hidden=true;sel=null;draw()};
-  document.getElementById("tog").onclick=()=>{Native.tap(done.has(i)?"light":"success");done.has(i)?done.delete(i):done.add(i);save();open(i,true)};
-  const h=document.getElementById("here");if(h)h.onclick=()=>{Native.tap("success");ancestors(i).forEach(a=>done.add(a));save();open(i,true)};
+  document.getElementById("tog").onclick=()=>{done.has(i)?done.delete(i):done.add(i);save();open(i,true)};
+  const h=document.getElementById("here");if(h)h.onclick=()=>{ancestors(i).forEach(a=>done.add(a));save();open(i,true)};
   panel.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>open(b.dataset.go));
 }
 
 if(window.dagre){layout();draw();home();addEventListener("resize",()=>{if(!sel&&!touched)home()});setTimeout(checkShared,0)}
 else{document.querySelector(".board").insertAdjacentHTML("beforeend",'<div class="err">The layout library didn\'t load. Reload the page to try again.</div>')}
 
-// About screen: unofficial disclaimer, privacy, data version, manual update check.
+// About screen: unofficial disclaimer, progress sharing, data version, sources.
 document.getElementById("about").onclick=()=>{
   sel=null;draw();
-  const D=window.ATLAS_DATA,C=window.ATLAS_CONFIG||{};
+  const D=window.ATLAS_DATA;
   panel.innerHTML=`
   <div class="row"><div class="chips"><span class="chip">About</span></div><button class="close" id="cls">Close</button></div>
   <h2>Speranza Quest Atlas</h2>
   <p class="note"><strong>Unofficial fan-made tool.</strong> Not affiliated with, endorsed by, or sponsored by Embark Studios. Arc Raiders is a trademark of Embark Studios AB.</p>
-  <div><p class="lbl">Your progress</p><p class="note">${Native.isNative?"Saved only on this device. No account, no ads, no tracking, and your progress never leaves your phone.":"Saved only in this browser. No account, no ads, no tracking. Clearing your browser data resets it."}</p>
+  <div><p class="lbl">Your progress</p><p class="note">Saved only in this browser. No account, no ads, no tracking. Clearing your browser data resets it.</p>
   <div class="row" style="margin-top:8px"><button id="share2">Share progress</button></div><p class="share-msg" id="sharemsg2"></p>
   <p class="note" style="margin-top:6px">Opens on any phone or computer, or send it to your squad.</p></div>
-  <div><p class="lbl">Quest data</p><p class="note">Version ${esc(D.version)} · ${D.quests.length} quests · ${esc(D.source)}</p>
-  ${Native.isNative?`<div class="row" style="margin-top:8px"><button id="upd">Check for quest updates</button></div><p class="note" id="updmsg" style="margin-top:6px"></p>`:""}</div>
+  <div><p class="lbl">Quest data</p><p class="note">${esc(D.label||"")}${D.label?" · ":""}version ${esc(D.version)} · ${D.quests.length} quests</p></div>
   <div><p class="lbl">Sources</p><p class="note">Quest details compiled from community resources: <a href="https://arcraiders.wiki" target="_blank" rel="noopener">Arc Raiders Wiki</a> and <a href="https://metaforge.app/arc-raiders" target="_blank" rel="noopener">MetaForge</a>. Spot an error? It may be from an older patch.</p></div>
-  ${C.privacyUrl?`<div class="row"><a href="${esc(C.privacyUrl)}" target="_blank" rel="noopener">Privacy policy</a></div>`:""}`;
+`;
   panel.hidden=false;document.getElementById("hint").hidden=true;
   document.getElementById("cls").onclick=()=>{panel.hidden=true};
   document.getElementById("share2").onclick=()=>shareProgress(document.getElementById("sharemsg2"));
-  const ub=document.getElementById("upd");if(ub)ub.onclick=async()=>{const m=document.getElementById("updmsg");m.textContent="Checking…";m.textContent=await Native.checkForUpdates(true)||""};
 };
 
 // ---- Share progress by link (no accounts) ----
@@ -184,7 +182,7 @@ document.getElementById("about").onclick=()=>{
 // the game requires its prerequisites, so everything before them counts as done too.
 function progressLink(){
   const front=[...done].filter(i=>!Q[i].unl.some(c=>done.has(c)));
-  const base=Native.isNative?((window.ATLAS_CONFIG||{}).siteUrl||""):location.origin+location.pathname;
+  const base=location.origin+location.pathname;
   return base+"#p="+front.join("~");
 }
 async function shareProgress(msg){

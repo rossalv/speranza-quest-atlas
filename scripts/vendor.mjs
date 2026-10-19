@@ -1,12 +1,8 @@
 // Copies the layout library and fonts out of node_modules into www/
-// so the app runs fully offline (no CDN, no Google Fonts).
+// so the site has no third-party requests (no CDN, no Google Fonts).
 import { copyFileSync, mkdirSync } from "node:fs";
 
 const files = [
-  ["node_modules/@capacitor/core/dist/capacitor.js", "www/vendor/capacitor.js"],
-  ["node_modules/@capacitor/haptics/dist/plugin.js", "www/vendor/haptics.js"],
-  ["node_modules/@capacitor/browser/dist/plugin.js", "www/vendor/browser.js"],
-  ["node_modules/@capacitor/preferences/dist/plugin.js", "www/vendor/preferences.js"],
   ["node_modules/dagre/dist/dagre.min.js", "www/vendor/dagre.min.js"],
   ["node_modules/@fontsource/chakra-petch/files/chakra-petch-latin-500-normal.woff2", "www/fonts/chakra-petch-500.woff2"],
   ["node_modules/@fontsource/chakra-petch/files/chakra-petch-latin-600-normal.woff2", "www/fonts/chakra-petch-600.woff2"],

@@ -1,17 +1,13 @@
-// Builds the plain website version (no Capacitor) into dist-web/,
-// ready to drag into Cloudflare Pages ("Upload assets").
+// Builds the website into dist-web/: copies www/, adds link-preview tags,
+// icons, cache headers and version.json. Deployed by .github/workflows/deploy-site.yml.
 import { cpSync, rmSync, readFileSync, writeFileSync, mkdirSync, copyFileSync } from "node:fs";
 
 const SITE = "https://speranzaquestmap.us/";
 
 rmSync("dist-web", { recursive: true, force: true });
 cpSync("www", "dist-web", { recursive: true });
-for (const f of ["capacitor.js", "haptics.js", "browser.js", "preferences.js"]) {
-  rmSync(`dist-web/vendor/${f}`, { force: true });
-}
 
 let html = readFileSync("dist-web/index.html", "utf8");
-html = html.replace(/<script src="vendor\/(capacitor|preferences|haptics|browser)\.js"><\/script>\n/g, "");
 html = html.replace(
   '<link rel="stylesheet" href="atlas.css">',
   '<link rel="stylesheet" href="atlas.css">\n' +
