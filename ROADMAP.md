@@ -47,14 +47,12 @@ move it to "Done" with the date.
 - Effort: small.
 
 ## Small polish (any time)
-- Remember trader / "good rewards" / "up next" filter choices between visits (localStorage).
-- "/" keyboard shortcut to focus search on desktop.
 - "Changed in the last update" badge on quests the weekly data check edited (optional
   `upd` date field per quest).
 - Manual light/dark toggle (the site follows the system setting today).
 
 ## Housekeeping
-- Merged preview branches `phone-ux`, `reward-search`, `install-app`, `items`, `map-links` and `raid-by-map` can be deleted
+- Merged preview branches `phone-ux`, `reward-search`, `install-app`, `items`, `map-links`, `raid-by-map` and `raid-plan` can be deleted
   in GitHub (sessions here can't delete branches). Keep `ios-app` (the old iPhone app)
   and `deploy-status` (the deploy reports).
 
@@ -71,3 +69,4 @@ move it to "Done" with the date.
 - 2026-10-18: Map-specific links in quest drawers (map named in quest name or objectives → MetaForge map; 37 of 123 quests). Quests that only name a POI get the per-quest map field in "Plan a raid by map".
 - 2026-10-18: Frozen Trail quest chains re-checked against 2.0.2 and 2.1.0 (no order changes found)
 - 2026-10-19: Plan a raid by map: `m` map tags on 120 of 123 quests (two sources each, research/quest-maps.md), "Raid on" map picker with per-map up-next counts, drawer map links from the tags, label "Updated for 2.1 · Oct 18"
+- 2026-10-19: Raid plan drawer (pick a map: up-next quests, this map's steps, bring list, mark done), objective checkboxes (`speranza-atlas-steps`), remembered filters (`speranza-atlas-filters`), "/" search shortcut
