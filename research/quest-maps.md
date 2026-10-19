@@ -32,6 +32,29 @@ Walkthrough guide places it on Dam Battlegrounds:
 Several of these also take place on other maps (wiki lists them). Those maps get
 tagged in their own passes.
 
+## Buried City (26 quests)
+
+Wiki Location includes Buried City for all of these (wires-crossed: its own page lists
+Blue Gate, Spaceport, Buried City).
+
+Objectives name Buried City directly:
+greasing-her-palms, what-we-left-behind, medical-merchandise, marked-for-death,
+esr-analyzer (A Reveal in Ruins), eyes-in-the-sky, unexpected-initiative, back-on-top,
+paving-the-way, a-rising-tide, taking-stock, the-league, wires-crossed
+
+ArcTracker quest page lists Buried City as a map:
+a-better-use, market-correction, the-root-of-the-matter, a-warm-place-to-rest,
+communication-hideout, digging-up-dirt
+
+Walkthrough guide places it on Buried City:
+- eyes-on-the-prize, after-rain-comes, life-of-a-pharmacist, building-a-library,
+  line-in-the-sand: Destructoid walkthroughs
+- industrial-espionage: ExitLag guide (Gas Station, north Buried City)
+- combat-recon: GamesFuze walkthrough
+
+Note: The Root of the Matter's "Research Building" is in Buried City (wiki and
+ArcTracker agree), not Dam's Research & Administration building.
+
 ## Any map (22 quests, `m: []`)
 
 Wiki Location "Any", and the objectives name no place (kill/loot/search anywhere):
