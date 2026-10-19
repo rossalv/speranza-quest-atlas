@@ -80,7 +80,7 @@
   // Links that would leave the app open in an in-app Safari sheet instead.
   document.addEventListener("click", e => {
     const a = e.target.closest && e.target.closest('a[target="_blank"]');
-    if (!a) return;
+    if (!a || !isNative) return; // on the website, let the browser open links normally
     e.preventDefault();
     Native.open(a.href);
   });

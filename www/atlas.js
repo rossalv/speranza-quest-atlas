@@ -127,7 +127,7 @@ function open(i,keep){sel=i;const q=Q[i],k=TR[q.t];
   ${q.unl.length?`<div><p class="lbl">Unlocks</p><div class="links">${btns(q.unl)}</div></div>`:""}
   <div class="row"><button class="donebtn" id="tog" aria-pressed="${done.has(i)}">${done.has(i)?"Marked done":"Mark done"}</button>
   ${!done.has(i)&&anc.length?`<button id="here">I'm on this quest</button>`:""}</div>
-  <div class="row"><a href="https://arcraiders.wiki/index.php?search=${encodeURIComponent(q.n)}" target="_blank" rel="noopener">Wiki</a>
+  <div class="row"><a href="https://arcraiders.wiki/wiki/Special:Search?search=${encodeURIComponent(q.n)}&go=Go" target="_blank" rel="noopener">Wiki</a>
   <a href="https://metaforge.app/arc-raiders/map" target="_blank" rel="noopener">Interactive map</a></div>
   <p class="note">Quest items aren't consumed, and squad progress is shared.</p>`;
   panel.hidden=false;document.getElementById("hint").hidden=true;draw();if(!keep)centerOn(i);
