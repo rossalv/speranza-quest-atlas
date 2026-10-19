@@ -57,6 +57,12 @@ The four Nomadic quests are labeled "Nomadic Envoy" because the envoy rotates.
   and `CLOUDFLARE_ACCOUNT_ID`. The custom domain is attached in the Cloudflare dashboard,
   not in `wrangler.jsonc`.
 
+## Weekly quest-data check
+A scheduled task ("Speranza quest data check", Wednesdays 8:52am Central) researches
+new patches and, if quest data needs fixing, pushes a `data-YYYY-MM-DD` branch and
+sends Ross the preview link. It never touches `main`. When Ross says "ship it" for
+one of those, merge that branch into `main` and verify the live deploy as above.
+
 ## Testing before you push
 `npm install && npm run build`, serve `dist-web/` locally, and drive it with Playwright
 at phone (393×852) and desktop (1440×900) sizes: map renders, mark done persists after
