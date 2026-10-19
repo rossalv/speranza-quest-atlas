@@ -11,13 +11,23 @@ const KEY="speranza-atlas-done";
 let done=new Set();
 try{done=new Set(JSON.parse(Store.get(KEY)||"[]").filter(i=>Q[i]))}catch(e){}
 const save=()=>{Store.set(KEY,JSON.stringify([...done]))};
+// Ticked objectives, per quest. Each step is stored as "index|text" so duplicate step
+// names stay separate and a reworded step simply comes back unticked.
+const STEPS_KEY="speranza-atlas-steps";
+let steps={};
+try{const o=JSON.parse(Store.get(STEPS_KEY)||"{}");for(const k in o)if(Q[k]&&Array.isArray(o[k]))steps[k]=o[k]}catch(e){}
+const saveSteps=()=>Store.set(STEPS_KEY,JSON.stringify(steps));
+const stepKey=(i,x)=>x+"|"+Q[i].o[x];
+const stepDone=(i,x)=>!!(steps[i]&&steps[i].includes(stepKey(i,x)));
+function setStep(i,x,on){const s=new Set(steps[i]||[]);on?s.add(stepKey(i,x)):s.delete(stepKey(i,x));if(s.size)steps[i]=[...s];else delete steps[i];saveSteps()}
+const stepCount=i=>Q[i].o.reduce((n,_,x)=>n+(stepDone(i,x)?1:0),0);
 const avail=i=>!done.has(i)&&Q[i].p.every(p=>done.has(p));
 function descendants(i,s=new Set()){Q[i].unl.forEach(c=>{if(!s.has(c)){s.add(c);descendants(c,s)}});return s}
 function ancestors(i,s=new Set()){Q[i].p.forEach(p=>{if(!s.has(p)){s.add(p);ancestors(p,s)}});return s}
 // Unfinished quests still in the way; a done quest implies its own chain is done.
 function pending(i,s=new Set()){Q[i].p.forEach(p=>{if(!done.has(p)&&!s.has(p)){s.add(p);pending(p,s)}});return s}
 
-let shown=new Set(Object.keys(TR)),goodOnly=false,availOnly=false,sel=null,fromItems=false,mapSel=null;
+let shown=new Set(Object.keys(TR)),goodOnly=false,availOnly=false,sel=null,backTo=null,mapSel=null;
 // Raid planning: quests with progress on the picked map. m=[] means any map; no m means
 // it depends on a map condition (Frigate, Matriarch...), so it never matches a single map.
 const onMap=(i,m=mapSel)=>!m||(Array.isArray(Q[i].m)&&(Q[i].m.length===0||Q[i].m.includes(m)));
@@ -60,7 +70,7 @@ function draw(){
     const g=el("g",{class:`qn ${st}${sel===i?" sel":""}${dim?" dim":""}`,transform:`translate(${P.x-W/2},${P.y-H/2})`,tabindex:dim?"-1":"0",role:"button","data-id":i,"aria-label":`${q.n}, ${q.t}, ${st==="next"?"up next":st}`},world);
     el("rect",{class:"ring",x:-5,y:-5,width:W+10,height:H+10,rx:10},g);
     el("rect",{class:"card",x:0,y:0,width:W,height:H,rx:6,fill:`var(--${k}-bg)`,stroke:`var(--${k})`},g);
-    const tg=el("text",{class:"s",x:11,y:16,fill:`var(--${k}-ink)`},g);tg.textContent=q.t.toUpperCase();
+    const tg=el("text",{class:"s",x:11,y:16,fill:`var(--${k}-ink)`},g);const sc=done.has(i)?0:stepCount(i);tg.textContent=q.t.toUpperCase()+(sc?` · ${sc}/${q.o.length} steps`:"");
     const t=el("text",{class:"t",x:11,y:36,fill:`var(--${k}-ink)`},g);t.textContent=trunc(q.n,25);
     const top=q.r.find(r=>r[3]==="Blueprint")||q.r.find(r=>(r[2]==="Epic"||r[2]==="Legendary")&&!LOW.has(r[3]))||q.r[0];
     const s=el("text",{class:"s",x:11,y:52,fill:`var(--${k}-ink)`},g);s.textContent=top?trunc(top[0],30):"";
@@ -113,17 +123,17 @@ svg.addEventListener("pointermove",e=>{if(!ptrs.has(e.pointerId))return;const p=
   if(ptrs.size===1){v.x+=dx;v.y+=dy;moved+=Math.abs(dx)+Math.abs(dy);if(moved>6)touched=true;apply()}
   else if(ptrs.size===2){const[a,b]=[...ptrs.values()],d=Math.hypot(a.x-b.x,a.y-b.y),r=svg.getBoundingClientRect();
     if(pinch)zoomAt((a.x+b.x)/2-r.left,(a.y+b.y)/2-r.top,d/pinch);pinch=d;moved=99;touched=true}});
-function up(e){ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;if(!ptrs.size){svg.classList.remove("drag");if(downId&&moved<6){fromItems=false;open(downId)}downId=null}}
+function up(e){ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;if(!ptrs.size){svg.classList.remove("drag");if(downId&&moved<6){backTo=null;open(downId)}downId=null}}
 svg.addEventListener("pointerup",up);svg.addEventListener("pointercancel",up);
 svg.addEventListener("wheel",e=>{e.preventDefault();touched=true;const r=svg.getBoundingClientRect();zoomAt(e.clientX-r.left,e.clientY-r.top,Math.exp(-e.deltaY*.0015))},{passive:false});
-svg.addEventListener("keydown",e=>{const n=e.target.closest&&e.target.closest(".qn");if(n&&(e.key==="Enter"||e.key===" ")){e.preventDefault();fromItems=false;open(n.dataset.id)}});
+svg.addEventListener("keydown",e=>{const n=e.target.closest&&e.target.closest(".qn");if(n&&(e.key==="Enter"||e.key===" ")){e.preventDefault();backTo=null;open(n.dataset.id)}});
 const mid=()=>{const r=svg.getBoundingClientRect();return[r.width/2,r.height/2]};
 document.getElementById("zin").onclick=()=>{touched=true;zoomAt(...mid(),1.25)};
 document.getElementById("zout").onclick=()=>{touched=true;zoomAt(...mid(),.8)};
 document.getElementById("fit").onclick=()=>{touched=true;fit()};
 
 const tbox=document.getElementById("traders");
-Object.keys(TR).forEach(t=>{const b=document.createElement("button");b.className="tchip";b.setAttribute("aria-pressed","true");
+Object.keys(TR).forEach(t=>{const b=document.createElement("button");b.className="tchip";b.dataset.t=t;b.setAttribute("aria-pressed","true");
   const n=DATA.filter(d=>d.t===t).length;b.innerHTML=`<span class="sw" style="background:var(--${TR[t]})"></span>${t} <span class="q">${n}</span>`;
   b.onclick=()=>{shown.has(t)?shown.delete(t):shown.add(t);b.setAttribute("aria-pressed",shown.has(t));flabel();draw()};tbox.appendChild(b)});
 const gb=document.getElementById("good");gb.onclick=()=>{goodOnly=!goodOnly;gb.setAttribute("aria-pressed",goodOnly);flabel();draw()};
@@ -133,7 +143,10 @@ const RAID_MAPS=["Dam Battlegrounds","Buried City","Spaceport","Blue Gate","Stel
 const mbox=document.getElementById("mapsel");
 RAID_MAPS.forEach(m=>{const b=document.createElement("button");b.className="tchip mchip";b.dataset.map=m;b.setAttribute("aria-pressed","false");
   b.innerHTML=`${m} <span class="q"></span>`;
-  b.onclick=()=>{mapSel=mapSel===m?null:m;mbox.querySelectorAll(".mchip").forEach(c=>c.setAttribute("aria-pressed",c.dataset.map===mapSel));flabel();draw();if(!sel){touched=false;home()}};
+  b.onclick=()=>{mapSel=mapSel===m?null:m;mbox.querySelectorAll(".mchip").forEach(c=>c.setAttribute("aria-pressed",c.dataset.map===mapSel));flabel();
+    if(mapSel){openPlan();hdr.classList.remove("open");ft.setAttribute("aria-expanded","false")}
+    else{if(panel.querySelector("#plan")||backTo==="plan"){panel.hidden=true;sel=null;backTo=null}draw()}
+    touched=false;home()};
   mbox.appendChild(b)});
 // Chip counts only quests tied to that map; any-map quests are lit on every map but not counted.
 const anyMap=i=>Array.isArray(Q[i].m)&&Q[i].m.length===0;
@@ -142,10 +155,19 @@ function mapCounts(){mbox.querySelectorAll(".mchip").forEach(c=>{const n=DATA.fi
   c.querySelector(".q").textContent=n;c.title=`${n} up-next quest${n===1?"":"s"} on ${c.dataset.map} (any-map quests not counted)`})}
 // Phone: filters live behind this button; its label shows how many are on.
 const ft=document.getElementById("ftog"),hdr=document.querySelector("header");
-function flabel(){const n=(Object.keys(TR).length-shown.size)+(goodOnly?1:0)+(availOnly?1:0)+(mapSel?1:0);ft.textContent=n?`Filters · ${n}`:"Filters"}
+function flabel(){const n=(Object.keys(TR).length-shown.size)+(goodOnly?1:0)+(availOnly?1:0)+(mapSel?1:0);ft.textContent=n?`Filters · ${n}`:"Filters";
+  Store.set(FILTERS_KEY,JSON.stringify({hide:Object.keys(TR).filter(t=>!shown.has(t)),good:goodOnly,avail:availOnly,map:mapSel}))}
+const FILTERS_KEY="speranza-atlas-filters";
+// Restore last visit's filters (before the first draw).
+try{const f=JSON.parse(Store.get(FILTERS_KEY)||"null");if(f){
+  (f.hide||[]).forEach(t=>{if(TR[t])shown.delete(t)});goodOnly=!!f.good;availOnly=!!f.avail;mapSel=RAID_MAPS.includes(f.map)?f.map:null;
+  tbox.querySelectorAll(".tchip").forEach(b=>b.setAttribute("aria-pressed",shown.has(b.dataset.t)));
+  gb.setAttribute("aria-pressed",goodOnly);ab.setAttribute("aria-pressed",availOnly);
+  mbox.querySelectorAll(".mchip").forEach(c=>c.setAttribute("aria-pressed",c.dataset.map===mapSel));
+  ft.textContent=(()=>{const n=(Object.keys(TR).length-shown.size)+(goodOnly?1:0)+(availOnly?1:0)+(mapSel?1:0);return n?`Filters · ${n}`:"Filters"})()}}catch(e){}
 ft.onclick=()=>{const o=!hdr.classList.contains("open");hdr.classList.toggle("open",o);ft.setAttribute("aria-expanded",o)};
 const rb=document.getElementById("reset");let armed=null;
-rb.onclick=()=>{if(armed){clearTimeout(armed);armed=null;done.clear();save();rb.textContent="Reset progress";sel?open(sel,true):(draw(),home());return}
+rb.onclick=()=>{if(armed){clearTimeout(armed);armed=null;done.clear();save();steps={};saveSteps();rb.textContent="Reset progress";sel?open(sel,true):(draw(),home());return}
   rb.textContent="Tap again to reset";armed=setTimeout(()=>{armed=null;rb.textContent="Reset progress"},3000)};
 // ---- Search: quests and rewards ----
 // Word-prefix match on every word typed, so "hull bp" finds "Hullcracker Blueprint".
@@ -184,7 +206,7 @@ function showSugg(){
 }
 function hideSugg(){sugg.hidden=true;find.setAttribute("aria-expanded","false");cur=-1}
 function mark(){sugg.querySelectorAll(".sg").forEach(b=>b.classList.toggle("on",+b.dataset.k===cur));const on=sugg.querySelector(".sg.on");on&&on.scrollIntoView({block:"nearest"})}
-function pick(k){const x=hits[k];if(!x)return;hideSugg();find.blur();fromItems=false;open(x.q,false,x.ri,x.qi)}
+function pick(k){const x=hits[k];if(!x)return;hideSugg();find.blur();backTo=null;open(x.q,false,x.ri,x.qi)}
 find.addEventListener("input",showSugg);
 find.addEventListener("focus",()=>{if(find.value.trim())showSugg()});
 find.addEventListener("keydown",e=>{
@@ -217,15 +239,15 @@ function open(i,keep,hl,hq){sel=i;const q=Q[i],k=TR[q.t];
   const st=done.has(i)?"Done":avail(i)?"Up next":"Locked";
   const anc=[...pending(i)];const focus=hl!=null||hq!=null;
   panel.innerHTML=`
-  ${fromItems?'<div class="row"><button id="backitems">← Items to keep</button></div>':""}
+  ${backTo?`<div class="row"><button id="back">← ${backTo==="items"?"Items to keep":"Raid plan: "+esc(mapSel||"")}</button></div>`:""}
   <div class="row"><div class="chips"><span class="chip" style="background:var(--${k}-bg);color:var(--${k}-ink);border-color:var(--${k})">${q.t}</span><span class="chip">${st}</span>${q.one?'<span class="chip">One raid</span>':""}${q.tier==="bp"?'<span class="bdg bp">BP</span>':q.tier==="ep"?'<span class="bdg ep">EPIC</span>':""}</div>
   <button class="close" id="cls">Close</button></div>
   <h2>${esc(q.n)}</h2>
   ${hl!=null&&q.r[hl]?`<p class="note">Reward <strong>${esc(q.r[hl][0])}</strong> comes from this quest.</p>`:""}
   ${hq!=null&&q.q[hq]?`<p class="note">This quest needs <strong>${q.q[hq][1]}× ${esc(q.q[hq][0])}</strong>.</p>`:""}
   ${!done.has(i)?(anc.length?`<details class="path"${hl!=null?" open":""}><summary><strong>${anc.length}</strong> quest${anc.length>1?"s":""} left before this unlocks. The route is highlighted on the map.</summary><ol>${pathOrder(anc).map(a=>`<li><button data-go="${a}">${esc(Q[a].n)}</button> <span class="q">${esc(Q[a].t)}</span></li>`).join("")}</ol></details>`:'<p class="route">Available now.</p>'):""}
-  <div><p class="lbl">Objectives</p><ol>${q.o.map(o=>`<li>${esc(o)}</li>`).join("")}</ol>${q.one?'<p class="note" style="margin-top:6px">Everything has to be done in a single raid.</p>':""}</div>
-  ${q.q.length?`<div><p class="lbl">Bring</p><ul class="bring">${q.q.map((r,qi)=>`<li${qi===hq?' class="hit"':""}>${r[1]}× ${esc(r[0])}</li>`).join("")}</ul>${!done.has(i)&&!fromItems?'<button class="linkish" id="allitems">All items to keep</button>':""}</div>`:""}
+  <div><p class="lbl">Objectives${done.has(i)?"":` <span id="stepn">${stepCount(i)}/${q.o.length}</span>`}</p>${done.has(i)?`<ol>${q.o.map(o=>`<li>${esc(o)}</li>`).join("")}</ol>`:`<ol class="steps">${q.o.map((o,x)=>stepLi(i,x)).join("")}</ol><p class="note" id="allsteps"${stepCount(i)===q.o.length?"":" hidden"} style="margin-top:6px">All steps ticked. Tap Mark done once you've turned it in.</p>`}${q.one?'<p class="note" style="margin-top:6px">Everything has to be done in a single raid.</p>':""}</div>
+  ${q.q.length?`<div><p class="lbl">Bring</p><ul class="bring">${q.q.map((r,qi)=>`<li${qi===hq?' class="hit"':""}>${r[1]}× ${esc(r[0])}</li>`).join("")}</ul>${!done.has(i)&&backTo!=="items"?'<button class="linkish" id="allitems">All items to keep</button>':""}</div>`:""}
   ${q.g.length?`<div><p class="lbl">Given on accept</p><ul>${q.g.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:""}
   <div><p class="lbl">Rewards</p><ul class="rw">${q.r.map((r,ri)=>`<li${ri===hl?' class="hit"':""}><span class="rar" style="color:var(${RC[r[2]]||"--muted"})">${esc(r[2]||r[3])}</span><span>${esc(r[0])}${r[3]==="Blueprint"?' <span class="bdg bp">BP</span>':""}</span><span class="q">×${r[1]}</span></li>`).join("")}${q.x?`<li><span class="rar" style="color:var(--muted)">XP</span><span class="q">${q.x.toLocaleString()}</span></li>`:""}</ul></div>
   ${q.p.length?`<div><p class="lbl">Requires${q.p.length>1?" (all)":""}</p><div class="links">${btns(q.p)}</div></div>`:""}
@@ -236,10 +258,12 @@ function open(i,keep,hl,hq){sel=i;const q=Q[i],k=TR[q.t];
   <div class="row"><a class="ext" href="https://arcraiders.wiki/wiki/Special:Search?search=${encodeURIComponent(q.n)}&go=Go" target="_blank" rel="noopener">Wiki page ↗</a></div>
   <p class="note">Items you bring are handed in. Squad progress is shared.</p>`;
   panel.hidden=false;panel.scrollTop=0;document.getElementById("hint").hidden=true;draw();if(!keep)(focus?frameRoute(i,anc):centerOn(i));
-  document.getElementById("cls").onclick=()=>{panel.hidden=true;sel=null;fromItems=false;draw()};
-  const bi=document.getElementById("backitems");if(bi)bi.onclick=()=>openItems();
+  document.getElementById("cls").onclick=()=>{panel.hidden=true;sel=null;backTo=null;draw()};
+  const bi=document.getElementById("back");if(bi)bi.onclick=()=>backTo==="items"?openItems():openPlan();
   const ai=document.getElementById("allitems");if(ai)ai.onclick=()=>openItems();
-  document.getElementById("tog").onclick=()=>{done.has(i)?done.delete(i):done.add(i);save();open(i,true)};
+  document.getElementById("tog").onclick=()=>{if(done.has(i))done.delete(i);else{done.add(i);delete steps[i];saveSteps()}save();open(i,true)};
+  wireSteps(panel,()=>{const n=stepCount(i),c=document.getElementById("stepn");if(c)c.textContent=`${n}/${q.o.length}`;
+    const a=document.getElementById("allsteps");if(a)a.hidden=n!==q.o.length});
   const h=document.getElementById("here");if(h)h.onclick=()=>{ancestors(i).forEach(a=>done.add(a));save();open(i,true)};
   panel.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>open(b.dataset.go));
 }
@@ -249,7 +273,7 @@ else{document.querySelector(".board").insertAdjacentHTML("beforeend",'<div class
 
 // About screen: unofficial disclaimer, progress sharing, data version, sources.
 document.getElementById("about").onclick=()=>{
-  sel=null;fromItems=false;draw();
+  sel=null;backTo=null;draw();
   const D=window.ATLAS_DATA;
   panel.innerHTML=`
   <div class="row"><div class="chips"><span class="chip">About</span></div><button class="close" id="cls">Close</button></div>
@@ -340,7 +364,7 @@ function keepList(){
   return list.sort((a,b)=>b.soon-a.soon||a.n.localeCompare(b.n));
 }
 function openItems(){
-  sel=null;fromItems=false;draw();
+  sel=null;backTo=null;draw();
   const list=keepList(),soon=list.filter(e=>e.soon),later=list.filter(e=>!e.soon);
   const row=(e,k)=>`<li class="kp${have.has(e.n)?" got":""}">
     <label class="kh"><input type="checkbox" data-k="${k}"${have.has(e.n)?" checked":""}><span class="kn">${esc(e.n)}</span><span class="q">×${e.total}</span></label>
@@ -360,6 +384,50 @@ function openItems(){
   document.getElementById("cls").onclick=()=>{panel.hidden=true};
   panel.querySelectorAll("input[data-k]").forEach(cb=>cb.onchange=()=>{const e=all[+cb.dataset.k];
     cb.checked?have.add(e.n):have.delete(e.n);saveHave();cb.closest(".kp").classList.toggle("got",cb.checked);count()});
-  panel.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{fromItems=true;open(b.dataset.go)});
+  panel.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{backTo="items";open(b.dataset.go)});
 }
 document.getElementById("items").onclick=openItems;
+
+// ---- Objective steps (shared by the quest drawer and the raid plan) ----
+function stepLi(i,x){const on=stepDone(i,x);
+  return `<li${on?' class="got"':""}><label class="step"><input type="checkbox" data-q="${i}" data-step="${x}"${on?" checked":""}><span>${esc(Q[i].o[x])}</span></label></li>`}
+function wireSteps(root,after){root.querySelectorAll("input[data-step]").forEach(cb=>cb.onchange=()=>{
+  setStep(cb.dataset.q,+cb.dataset.step,cb.checked);cb.closest("li").classList.toggle("got",cb.checked);draw();after&&after(cb.dataset.q)})}
+
+// ---- Raid plan: what to do on the picked map ----
+// Shows this map's steps for each up-next quest. A step that names a different map
+// (and not this one) is hidden and counted as "on other maps".
+function stepsHere(i,m){const mine=MAPS.find(x=>x[0]===m),others=MAPS.filter(x=>x[0]!==m);
+  return Q[i].o.map((o,x)=>x).filter(x=>{const o=Q[i].o[x];return (mine&&mine[2].test(o))||!others.some(r=>r[2].test(o))})}
+function openPlan(){
+  if(!mapSel){panel.hidden=true;return}
+  const keepScroll=panel.querySelector("#plan")?panel.scrollTop:0;
+  sel=null;backTo=null;draw();
+  const m=mapSel,up=i=>avail(i);
+  const here=pathOrder(ids.filter(i=>up(i)&&onlyMap(i,m))),any=pathOrder(ids.filter(i=>up(i)&&anyMap(i))),cond=ids.filter(i=>up(i)&&!Array.isArray(Q[i].m));
+  const card=i=>{const q=Q[i],k=TR[q.t],xs=stepsHere(i,m),hidden=q.o.length-xs.length;
+    return `<li class="pq">
+      <div class="row"><button class="pqn" data-go="${i}">${esc(q.n)}</button><span class="chip" style="background:var(--${k}-bg);color:var(--${k}-ink);border-color:var(--${k})">${esc(q.t)}</span>${q.one?'<span class="chip">One raid</span>':""}</div>
+      <ol class="steps">${xs.map(x=>stepLi(i,x)).join("")}</ol>
+      ${hidden?`<p class="note">+${hidden} step${hidden>1?"s":""} on other maps</p>`:""}
+      ${q.q.length?`<p class="note"><strong>Bring:</strong> ${q.q.map(r=>`${r[1]}× ${esc(r[0])}`).join(", ")}</p>`:""}
+      <div class="row"><button class="donebtn" data-done="${i}" aria-pressed="false">Mark done</button></div></li>`};
+  const slug=(MAPS.find(x=>x[0]===m)||[])[1];
+  panel.innerHTML=`
+  <div class="row" id="plan"><div class="chips"><span class="chip">Raid plan</span></div><button class="close" id="cls">Close</button></div>
+  <h2>${esc(m)}</h2>
+  <p class="note">${here.length} up-next quest${here.length===1?"":"s"} on this map${any.length?`, plus ${any.length} you can do on any map`:""}. Tick steps as you go.</p>
+  ${here.length?`<ul class="plan">${here.map(card).join("")}</ul>`:`<p class="note">Nothing up next is tied to ${esc(m)}. Try another map, or work on the any-map quests below.</p>`}
+  ${any.length?`<details class="path anymap"${here.length?"":" open"}><summary>Any map (${any.length})</summary><ul class="plan">${any.map(card).join("")}</ul></details>`:""}
+  ${cond.length?`<p class="note">Needs a map condition: ${cond.map(i=>`<button class="linkish inl" data-go="${i}">${esc(Q[i].n)}</button>`).join(", ")}. Check what's active before you queue.</p>`:""}
+  ${slug?`<div class="row"><a class="ext" href="${MF}/${slug}" target="_blank" rel="noopener">${esc(m)} map ↗</a></div>`:""}`;
+  panel.hidden=false;document.getElementById("hint").hidden=true;panel.scrollTop=keepScroll;
+  document.getElementById("cls").onclick=()=>{panel.hidden=true};
+  wireSteps(panel);
+  panel.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{backTo="plan";open(b.dataset.go)});
+  panel.querySelectorAll("[data-done]").forEach(b=>b.onclick=()=>{const i=b.dataset.done;done.add(i);delete steps[i];saveSteps();save();openPlan()});
+}
+
+// "/" jumps to search (desktop), unless you're already typing somewhere.
+addEventListener("keydown",e=>{if(e.key!=="/"||e.ctrlKey||e.metaKey||e.altKey)return;const t=e.target;
+  if(t&&(t.tagName==="INPUT"||t.tagName==="TEXTAREA"||t.isContentEditable))return;e.preventDefault();find.focus();find.select()});

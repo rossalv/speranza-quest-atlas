@@ -84,6 +84,8 @@ screenshots, not just console output.
   are implied. Keep old links working when changing this.
 - Keep the localStorage key `speranza-atlas-done` so visitors don't lose progress.
   "Have it" ticks on the Items to keep list use `speranza-atlas-have` (item names).
+  Ticked objectives use `speranza-atlas-steps` ({questId: ["index|objective text"]}),
+  and remembered filters use `speranza-atlas-filters`. All stay in the browser.
 
 ## History
 The project started as an iPhone app (Capacitor). Ross switched to website-only on

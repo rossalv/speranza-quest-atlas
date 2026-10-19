@@ -29,7 +29,7 @@
   }
 
   async function start() {
-    Store.init([PROGRESS_KEY, "speranza-atlas-have"]);
+    Store.init([PROGRESS_KEY, "speranza-atlas-have", "speranza-atlas-steps", "speranza-atlas-filters"]);
     const res = await fetch("data/quests.json", { cache: "no-cache" });
     if (!res.ok) throw new Error(`quests.json ${res.status}`);
     window.ATLAS_DATA = await res.json();

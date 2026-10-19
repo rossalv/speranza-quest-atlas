@@ -168,3 +168,20 @@ a.ext:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .tchip.mchip[aria-pressed="false"]{opacity:1;text-decoration:none}
 .tchip.mchip[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
 .tchip.mchip[aria-pressed="true"] .q{color:var(--panel);opacity:.8}
+
+/* --- Objective steps (quest drawer and raid plan) --- */
+ol.steps{list-style:none;padding:0;display:flex;flex-direction:column;gap:2px}
+ol.steps li{margin:0}
+.step{display:flex;gap:10px;align-items:flex-start;cursor:pointer;padding:4px 0;font-size:14px;line-height:1.45}
+.step input{width:20px;height:20px;margin:0;flex:none;accent-color:var(--done)}
+ol.steps li.got .step span{text-decoration:line-through;color:var(--muted)}
+#stepn{letter-spacing:0;margin-left:4px}
+
+/* --- Raid plan --- */
+ul.plan{list-style:none;padding:0;display:flex;flex-direction:column;gap:10px;margin-top:4px}
+ul.plan li.pq{border:1px solid var(--grid);border-radius:8px;padding:10px 12px;background:var(--bg);display:flex;flex-direction:column;gap:6px;margin:0}
+.pqn{font:600 15px var(--f-display);border:0;background:none;padding:0;min-height:0;color:var(--ink);text-align:left;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--line)}
+.pqn:hover{border:0;text-decoration-color:var(--ink)}
+ul.plan .donebtn{font-size:12px;padding:4px 10px;min-height:30px;background:var(--panel)}
+details.anymap summary{font:500 11px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.linkish.inl{display:inline;margin:0;padding:0;font-size:13px}
