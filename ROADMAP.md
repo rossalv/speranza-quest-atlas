@@ -6,17 +6,31 @@ move it to "Done" with the date.
 
 ## Next up
 
-### 1. Plan a raid by map
-- Pick a map and see which of your up-next quests can be done there in one trip.
-- Needs a new per-quest field, e.g. `m: ["Dam Battlegrounds", ...]` (empty = any map).
-  That's a research pass over all quests, using the CLAUDE.md sourcing rules (two
-  sources). Update the data-format section of CLAUDE.md and the workflow's data check.
-- UI idea: a map picker in the Filters area that dims everything else, plus a count per map.
-- Effort: medium (mostly research).
+### 1. Sync progress from the game (via ArcTracker) — Ross deciding
+- Embark has no public sign-in or API for third-party sites (design director, Oct 2025:
+  no current plans). Direct Embark login would mean holding players' game tokens and
+  calling private endpoints: not worth the risk for this site.
+- Workable route: ArcTracker's developer API. A player who uses ARC Tracker Link creates
+  a personal key in ArcTracker with `quests:read` and pastes it here; the site calls
+  `GET /api/v2/user/quests` and marks completed quests done. Needs an ArcTracker app
+  key (`X-App-Key`), which must stay secret, so add a Worker `/api` route as a
+  pass-through (first server code; update About privacy wording in the same change).
+  Keep the user key only in the visitor's browser. Match quests by name: some ids
+  differ (our `off-the-raider` = Off The Radar, `esr-analyzer` = A Reveal in Ruins).
+- Check ArcTracker's Terms of Service for third-party apps first. Only helps PC players
+  who use ARC Tracker Link.
+- Effort: medium.
+
+### 2. Tag the three map-condition quests
+- Boarding the Frigate, Disrupting the Frigate, Nothing Gained have no `m` yet (they
+  need a live map condition). The arcmaps.com event feed used by the companion
+  Project's arc_timers.py lists which maps host each condition; one more source would
+  let them be tagged. See research/quest-maps.md.
+- Effort: small.
 
 ## Later
 
-### 2. Squad mode
+### 3. Squad mode
 - Squadmates join with a short code and see overlapping progress: quests everyone has
   up next, who is behind on a chain.
 - First server feature: add a Worker script (`main` in wrangler.jsonc) with an `/api`
@@ -25,7 +39,7 @@ move it to "Done" with the date.
   rules). No accounts: squad code plus a per-device name.
 - Effort: large.
 
-### 3. Visitor counts
+### 4. Visitor counts
 - Cloudflare Web Analytics (free, cookie-free) to see whether people besides Ross's
   squad use the site. Change the About "no tracking" line to something like
   "anonymous visit counts, no personal data".
@@ -40,7 +54,7 @@ move it to "Done" with the date.
 - Manual light/dark toggle (the site follows the system setting today).
 
 ## Housekeeping
-- Merged preview branches `phone-ux`, `reward-search`, `install-app`, `items` and `map-links` can be deleted
+- Merged preview branches `phone-ux`, `reward-search`, `install-app`, `items`, `map-links` and `raid-by-map` can be deleted
   in GitHub (sessions here can't delete branches). Keep `ios-app` (the old iPhone app)
   and `deploy-status` (the deploy reports).
 
@@ -55,3 +69,5 @@ move it to "Done" with the date.
 - 2026-10-18: Install like an app (home screen, offline)
 - 2026-10-18: Items update: "Needed for" search, "Items to keep" checklist with have-it ticks (`speranza-atlas-have`). Totals add up across quests because quests consume the items (confirmed by Ross).
 - 2026-10-18: Map-specific links in quest drawers (map named in quest name or objectives → MetaForge map; 37 of 123 quests). Quests that only name a POI get the per-quest map field in "Plan a raid by map".
+- 2026-10-18: Frozen Trail quest chains re-checked against 2.0.2 and 2.1.0 (no order changes found)
+- 2026-10-19: Plan a raid by map: `m` map tags on 120 of 123 quests (two sources each, research/quest-maps.md), "Raid on" map picker with per-map up-next counts, drawer map links from the tags, label "Updated for 2.1 · Oct 18"
