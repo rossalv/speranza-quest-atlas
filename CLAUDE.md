@@ -6,6 +6,8 @@ progress share links. Plain HTML/CSS/JS, no framework, no bundler. Don't add one
 unless asked. Owner: Ross (professional developer, mostly mainframe, so explain
 web/Cloudflare specifics briefly).
 
+Ideas and priorities for new work are in `ROADMAP.md`. Update it when something ships.
+
 ## Files
 - `www/index.html` — page shell and script order
 - `www/boot.js` — `Store` (localStorage progress), loads `data/quests.json`, then `atlas.js`
