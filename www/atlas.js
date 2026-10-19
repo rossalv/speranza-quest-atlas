@@ -66,7 +66,7 @@ function draw(){
     else if(q.tier==="ep"){el("rect",{class:"epb",x:bx-36,y:5,width:36,height:14,rx:3},g);const b=el("text",{class:"ept",x:bx-18,y:15.5,"text-anchor":"middle"},g);b.textContent="EPIC"}
   });
   const goodLeft=DATA.filter(d=>d.tier&&!done.has(d.i)).length;
-  document.getElementById("count").textContent=`${done.size} / ${ids.length} done · ${DATA.filter(d=>avail(d.i)).length} up next · ${goodLeft} good rewards left`;
+  document.getElementById("count").textContent=`${done.size} / ${ids.length} done · ${DATA.filter(d=>avail(d.i)).length} up next · ${goodLeft} good rewards left${window.ATLAS_DATA.label?" · "+window.ATLAS_DATA.label:""}`;
 }
 
 let v={x:0,y:0,k:1};
