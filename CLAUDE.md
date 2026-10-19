@@ -22,7 +22,11 @@ Ideas and priorities for new work are in `ROADMAP.md`. Update it when something 
 - `www/vendor/`, `www/fonts/` — dagre and fonts, copied from node_modules by `npm run vendor`
 - `assets/web/` — favicons, link-preview image `og.png` and its source `og-card.html`
 - `scripts/build-web.mjs` — builds `dist-web/`: adds link-preview tags, icons, `_headers`, `version.json`
-- `wrangler.jsonc` — the Cloudflare Worker `speranza-atlas` (static assets only)
+- `wrangler.jsonc` — the Cloudflare Worker `speranza-atlas`: static assets from `dist-web/`,
+  plus `worker/index.js` for `/api/*` (static files are served first)
+- `worker/index.js` — `GET /api/conditions?region=north-america|europe`: live map
+  conditions from MetaForge's public event schedule, trimmed to 24 h and edge-cached
+  10 minutes. MetaForge requires attribution (shown in the raid plan and About).
 - `.github/workflows/deploy-site.yml` — build, data check, deploy, status report
 
 ## Quest data format (compact keys)
@@ -34,6 +38,9 @@ Nomadic Envoy), `p` prerequisite ids, `o` objectives, `r` rewards
 missing = depends on a map condition like the Frigate, shown as "needs a map condition"). Map names: Dam Battlegrounds, Buried City, Spaceport,
 Blue Gate, Stella Montis, Riven Tides, Pendola Pass. Sources for each tag are in
 `research/quest-maps.md`; the deploy rejects any other map name.
+`c` (only on quests without `m`) lists the live map conditions the quest needs, using
+MetaForge's event names exactly (e.g. "ARC Frigate", "Matriarch", "Harvester"); the site
+matches them against /api/conditions to say where they're active now.
 
 When the data changes: bump `version` (ISO date, e.g. `2026-11-04`, add `.1` for a
 second change that day), update `label` (shown in the header, e.g.

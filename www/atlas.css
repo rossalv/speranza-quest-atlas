@@ -185,3 +185,9 @@ ul.plan li.pq{border:1px solid var(--grid);border-radius:8px;padding:10px 12px;b
 ul.plan .donebtn{font-size:12px;padding:4px 10px;min-height:30px;background:var(--panel)}
 details.anymap summary{font:500 11px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .linkish.inl{display:inline;margin:0;padding:0;font-size:13px}
+
+/* --- Live map conditions --- */
+.tchip.mchip.live::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--done);box-shadow:0 0 0 2px color-mix(in srgb,var(--done) 30%,transparent)}
+.tchip.mchip.live[aria-pressed="true"]::before{background:var(--panel)}
+.chip.livechip{border-color:var(--done);color:var(--done)}
+#plannow strong,#livecond strong{color:var(--ink);font-weight:500}

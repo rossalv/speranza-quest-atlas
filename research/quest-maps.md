@@ -151,6 +151,15 @@ doctors-orders, into-the-fray, espresso, safe-passage, what-goes-around,
 tribute-to-toledo, sparks-fly, bombing-run, collision-course, mixed-signals,
 out-of-the-shadows, settled-in-full, test-case
 
+## Map-condition quests (`c` field, Oct 19)
+
+- boarding-the-frigate, disrupting-the-frigate: c = ["ARC Frigate"]. Objectives are all
+  on the Frigate; games.gg calls it a map condition; MetaForge's event schedule lists
+  "ARC Frigate" slots (Oct 19 sample: Blue Gate, Buried City, Dam, Pendola Pass, Spaceport).
+- nothing-gained: c = ["Matriarch", "Harvester"]. Objectives: destroy a Matriarch and
+  a Queen. Prima Games: the Matriarch spawns during the Matriarch event and the Queen
+  guards the Harvester event; MetaForge's schedule lists both (Blue Gate, Dam, Spaceport).
+
 ## Open questions
 
 These three stay untagged on purpose. They depend on a live map condition rather than

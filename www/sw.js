@@ -27,6 +27,7 @@ self.addEventListener("fetch", e => {
   const req = e.request;
   const url = new URL(req.url);
   if (req.method !== "GET" || url.origin !== location.origin || url.pathname === "/version.json") return;
+  if (url.pathname.startsWith("/api/")) return; // live data (map conditions): never cache offline
 
   const staticAsset = /^\/(fonts|vendor)\//.test(url.pathname) || /\.(png|woff2)$/.test(url.pathname);
   if (staticAsset) {

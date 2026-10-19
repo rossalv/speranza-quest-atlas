@@ -80,7 +80,7 @@ function draw(){
     else if(q.tier==="ep"){el("rect",{class:"epb",x:bx-36,y:5,width:36,height:14,rx:3},g);const b=el("text",{class:"ept",x:bx-18,y:15.5,"text-anchor":"middle"},g);b.textContent="EPIC"}
   });
   const goodLeft=DATA.filter(d=>d.tier&&!done.has(d.i)).length;
-  document.getElementById("count").textContent=`${done.size} / ${ids.length} done · ${DATA.filter(d=>avail(d.i)).length} up next · ${goodLeft} good rewards left${mapSel?` · ${DATA.filter(d=>avail(d.i)&&onlyMap(d.i,mapSel)).length} up next on ${mapSel} + ${DATA.filter(d=>avail(d.i)&&anyMap(d.i)).length} any map`:""}${window.ATLAS_DATA.label?" · "+window.ATLAS_DATA.label:""}`;
+  document.getElementById("count").textContent=`${done.size} / ${ids.length} done · ${DATA.filter(d=>avail(d.i)).length} up next · ${goodLeft} good rewards left${mapSel?` · ${planCount(mapSel)} up next on ${mapSel} + ${DATA.filter(d=>avail(d.i)&&anyMap(d.i)).length} any map`:""}${window.ATLAS_DATA.label?" · "+window.ATLAS_DATA.label:""}`;
   mapCounts();
 }
 
@@ -151,16 +151,44 @@ RAID_MAPS.forEach(m=>{const b=document.createElement("button");b.className="tchi
 // Chip counts only quests tied to that map; any-map quests are lit on every map but not counted.
 const anyMap=i=>Array.isArray(Q[i].m)&&Q[i].m.length===0;
 const onlyMap=(i,m)=>Array.isArray(Q[i].m)&&Q[i].m.includes(m);
-function mapCounts(){mbox.querySelectorAll(".mchip").forEach(c=>{const n=DATA.filter(d=>avail(d.i)&&onlyMap(d.i,c.dataset.map)).length;
-  c.querySelector(".q").textContent=n;c.title=`${n} up-next quest${n===1?"":"s"} on ${c.dataset.map} (any-map quests not counted)`})}
+// Up-next quests for a map: tagged with it, or needing a condition that's live there now.
+const planCount=m=>DATA.filter(d=>avail(d.i)&&(onlyMap(d.i,m)||(!Array.isArray(d.m)&&liveFor(d.i,m).length))).length;
+function mapCounts(){mbox.querySelectorAll(".mchip").forEach(c=>{const m=c.dataset.map,n=planCount(m),live=condNow(m);
+  c.querySelector(".q").textContent=n;c.classList.toggle("live",live.length>0);
+  c.title=`${n} up-next quest${n===1?"":"s"} on ${m} (any-map quests not counted)${live.length?`. Now: ${live.map(e=>e.name).join(", ")}`:""}`})}
+// ---- Live map conditions: /api/conditions (this site's Worker, from MetaForge's schedule) ----
+let COND=null,condErr=false;
+let region=(()=>{try{return /^America\//.test(Intl.DateTimeFormat().resolvedOptions().timeZone)?"north-america":"europe"}catch(e){return "north-america"}})();
+const REGION_NAME={"north-america":"North America","europe":"Europe"};
+function tfmt(t){const d=new Date(t);return d.toLocaleString([],d.toDateString()===new Date().toDateString()?{hour:"numeric",minute:"2-digit"}:{weekday:"short",hour:"numeric",minute:"2-digit"})}
+const condNow=(m,t=Date.now())=>COND?COND.events.filter(e=>e.map===m&&e.start<=t&&t<e.end):[];
+function condNext(m,t=Date.now()){const n=COND?COND.events.filter(e=>e.map===m&&e.start>t):[];return n.length?n.filter(e=>e.start===n[0].start):[]}
+const condsOf=i=>Array.isArray(Q[i].c)?Q[i].c:[];
+const liveFor=(i,m,t=Date.now())=>condNow(m,t).filter(e=>condsOf(i).includes(e.name));
+// Status line for a quest that needs a condition (Frigate, Matriarch...).
+function condQuestNote(i){const c=condsOf(i);if(!c.length)return "";const need=`Needs ${c.map(esc).join(" or ")}.`;
+  if(condErr)return `${need} Live map conditions are unavailable right now.`;if(!COND)return `${need} Checking live map conditions…`;
+  const t=Date.now(),act=COND.events.filter(e=>c.includes(e.name)&&e.start<=t&&t<e.end),nxt=COND.events.filter(e=>c.includes(e.name)&&e.start>t).slice(0,3);
+  return `${need} ${act.length?`<strong>Active now:</strong> ${act.map(e=>`${esc(e.name)} on ${esc(e.map)} until ${tfmt(e.end)}`).join("; ")}.`:"Not active on any map right now."}${nxt.length?` <strong>Next:</strong> ${nxt.map(e=>`${esc(e.map)} ${tfmt(e.start)}`).join(", ")}.`:""}`}
+function planNowLine(m){if(condErr)return "Live map conditions are unavailable right now.";if(!COND)return "Checking live map conditions…";
+  const a=condNow(m),n=condNext(m);
+  return `${a.length?`<strong>Now:</strong> ${a.map(e=>`${esc(e.name)} until ${tfmt(e.end)}`).join(", ")}`:"No map condition right now"}${n.length?` · <strong>Next:</strong> ${n.map(e=>esc(e.name)).join(", ")} at ${tfmt(n[0].start)}`:""}.`}
+let condAt=0;
+async function loadConditions(){condAt=Date.now();
+  try{const r=await fetch(`/api/conditions?region=${region}`,{cache:"no-cache"});if(!r.ok)throw 0;const d=await r.json();if(!Array.isArray(d.events))throw 0;COND=d;condErr=false}
+  catch(e){condErr=true}
+  mapCounts();if(panel.querySelector("#plan"))openPlan();
+  const lc=document.getElementById("livecond");if(lc&&sel)lc.innerHTML=condQuestNote(sel)}
+setInterval(()=>{if(!document.hidden)loadConditions()},5*60e3);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-condAt>5*60e3)loadConditions()});
 // Phone: filters live behind this button; its label shows how many are on.
 const ft=document.getElementById("ftog"),hdr=document.querySelector("header");
 function flabel(){const n=(Object.keys(TR).length-shown.size)+(goodOnly?1:0)+(availOnly?1:0)+(mapSel?1:0);ft.textContent=n?`Filters · ${n}`:"Filters";
-  Store.set(FILTERS_KEY,JSON.stringify({hide:Object.keys(TR).filter(t=>!shown.has(t)),good:goodOnly,avail:availOnly,map:mapSel}))}
+  Store.set(FILTERS_KEY,JSON.stringify({hide:Object.keys(TR).filter(t=>!shown.has(t)),good:goodOnly,avail:availOnly,map:mapSel,region}))}
 const FILTERS_KEY="speranza-atlas-filters";
 // Restore last visit's filters (before the first draw).
 try{const f=JSON.parse(Store.get(FILTERS_KEY)||"null");if(f){
-  (f.hide||[]).forEach(t=>{if(TR[t])shown.delete(t)});goodOnly=!!f.good;availOnly=!!f.avail;mapSel=RAID_MAPS.includes(f.map)?f.map:null;
+  (f.hide||[]).forEach(t=>{if(TR[t])shown.delete(t)});goodOnly=!!f.good;availOnly=!!f.avail;mapSel=RAID_MAPS.includes(f.map)?f.map:null;if(REGION_NAME[f.region])region=f.region;
   tbox.querySelectorAll(".tchip").forEach(b=>b.setAttribute("aria-pressed",shown.has(b.dataset.t)));
   gb.setAttribute("aria-pressed",goodOnly);ab.setAttribute("aria-pressed",availOnly);
   mbox.querySelectorAll(".mchip").forEach(c=>c.setAttribute("aria-pressed",c.dataset.map===mapSel));
@@ -230,7 +258,7 @@ const MAPS=[["Dam Battlegrounds","dam",/\bDam Battlegrounds\b|\bThe Dam\b/],["Bu
 function mapsIn(q){const t=[q.n,...q.o].join("\n");return MAPS.map(m=>({m,at:t.search(m[2])})).filter(x=>x.at>=0).sort((a,b)=>a.at-b.at).map(x=>x.m)}
 function mapLinks(q){const t=[q.n,...q.o].join("\n");
   const ms=Array.isArray(q.m)?MAPS.filter(m=>q.m.includes(m[0])).map(m=>({m,at:t.search(m[2])})).sort((a,b)=>(a.at<0?1e9:a.at)-(b.at<0?1e9:b.at)).map(x=>x.m):mapsIn(q);
-  const note=Array.isArray(q.m)&&!q.m.length?'<p class="note">Can be done on any map.</p>':!Array.isArray(q.m)?'<p class="note">Needs a map condition (like the Frigate or a boss event), so check what\'s active before you queue.</p>':"";
+  const note=Array.isArray(q.m)&&!q.m.length?'<p class="note">Can be done on any map.</p>':!Array.isArray(q.m)?`<p class="note" id="livecond">${condQuestNote(q.i)||"Needs a map condition (like the Frigate or a boss event), so check what's active before you queue."}</p>`:"";
   const a=(h,t)=>`<a class="ext" href="${h}" target="_blank" rel="noopener">${t} ↗</a>`;
   return `<div><p class="lbl">Interactive map${ms.length>1?"s":""}</p>${note}<div class="links"${note?' style="margin-top:6px"':""}>${
     ms.length?ms.map(([n,s])=>a(`${MF}/${s}`,n)).join(""):a(MF,"All maps on MetaForge")}</div></div>`}
@@ -268,7 +296,7 @@ function open(i,keep,hl,hq){sel=i;const q=Q[i],k=TR[q.t];
   panel.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>open(b.dataset.go));
 }
 
-if(window.dagre){layout();draw();home();addEventListener("resize",()=>{if(!sel&&!touched)home()});setTimeout(checkShared,0)}
+if(window.dagre){layout();draw();home();loadConditions();addEventListener("resize",()=>{if(!sel&&!touched)home()});setTimeout(checkShared,0)}
 else{document.querySelector(".board").insertAdjacentHTML("beforeend",'<div class="err">The layout library didn\'t load. Reload the page to try again.</div>')}
 
 // About screen: unofficial disclaimer, progress sharing, data version, sources.
@@ -279,13 +307,13 @@ document.getElementById("about").onclick=()=>{
   <div class="row"><div class="chips"><span class="chip">About</span></div><button class="close" id="cls">Close</button></div>
   <h2>Speranza Quest Atlas</h2>
   <p class="note"><strong>Unofficial fan-made tool.</strong> Not affiliated with, endorsed by, or sponsored by Embark Studios. Arc Raiders is a trademark of Embark Studios AB.</p>
-  <div><p class="lbl">Your progress</p><p class="note">Saved only in this browser. No account, no ads, no tracking. Clearing your browser data resets it.</p>
+  <div><p class="lbl">Your progress</p><p class="note">Saved only in this browser. No account, no ads, no tracking. Clearing your browser data resets it. Live map conditions come through this site's server from MetaForge; nothing about you or your progress is sent.</p>
   <div class="row" style="margin-top:8px"><button id="share2">Share progress</button></div><p class="share-msg" id="sharemsg2"></p>
   <p class="note" style="margin-top:6px">Opens on any phone or computer, or send it to your squad.</p>
   <div class="row" style="margin-top:10px"><input type="url" id="plink" placeholder="Paste a progress link" aria-label="Paste a progress link" style="flex:1;min-width:0"><button id="pload">Load</button></div><p class="share-msg" id="ploadmsg"></p></div>
   <div><p class="lbl">Use it like an app</p>${installHelp()}</div>
   <div><p class="lbl">Quest data</p><p class="note">${esc(D.label||"")}${D.label?" · ":""}version ${esc(D.version)} · ${D.quests.length} quests</p></div>
-  <div><p class="lbl">Sources</p><p class="note">Quest details compiled from community resources: <a href="https://arcraiders.wiki" target="_blank" rel="noopener">Arc Raiders Wiki</a> and <a href="https://metaforge.app/arc-raiders" target="_blank" rel="noopener">MetaForge</a>. Spot an error? It may be from an older patch.</p></div>
+  <div><p class="lbl">Sources</p><p class="note">Quest details compiled from community resources: <a href="https://arcraiders.wiki" target="_blank" rel="noopener">Arc Raiders Wiki</a> and <a href="https://metaforge.app/arc-raiders" target="_blank" rel="noopener">MetaForge</a>. Live map conditions: MetaForge's event schedule. Spot an error? It may be from an older patch.</p></div>
 `;
   panel.hidden=false;document.getElementById("hint").hidden=true;
   document.getElementById("cls").onclick=()=>{panel.hidden=true};
@@ -404,10 +432,12 @@ function openPlan(){
   const keepScroll=panel.querySelector("#plan")?panel.scrollTop:0;
   sel=null;backTo=null;draw();
   const m=mapSel,up=i=>avail(i);
-  const here=pathOrder(ids.filter(i=>up(i)&&onlyMap(i,m))),any=pathOrder(ids.filter(i=>up(i)&&anyMap(i))),cond=ids.filter(i=>up(i)&&!Array.isArray(Q[i].m));
+  const cond=ids.filter(i=>up(i)&&!Array.isArray(Q[i].m)),condHere=cond.filter(i=>liveFor(i,m).length),condElse=cond.filter(i=>!condHere.includes(i));
+  const here=[...condHere,...pathOrder(ids.filter(i=>up(i)&&onlyMap(i,m)))],any=pathOrder(ids.filter(i=>up(i)&&anyMap(i)));
+  const other=region==="north-america"?"europe":"north-america";
   const card=i=>{const q=Q[i],k=TR[q.t],xs=stepsHere(i,m),hidden=q.o.length-xs.length;
     return `<li class="pq">
-      <div class="row"><button class="pqn" data-go="${i}">${esc(q.n)}</button><span class="chip" style="background:var(--${k}-bg);color:var(--${k}-ink);border-color:var(--${k})">${esc(q.t)}</span>${q.one?'<span class="chip">One raid</span>':""}</div>
+      <div class="row"><button class="pqn" data-go="${i}">${esc(q.n)}</button><span class="chip" style="background:var(--${k}-bg);color:var(--${k}-ink);border-color:var(--${k})">${esc(q.t)}</span>${q.one?'<span class="chip">One raid</span>':""}${liveFor(i,m).map(e=>`<span class="chip livechip">${esc(e.name)} until ${tfmt(e.end)}</span>`).join("")}</div>
       <ol class="steps">${xs.map(x=>stepLi(i,x)).join("")}</ol>
       ${hidden?`<p class="note">+${hidden} step${hidden>1?"s":""} on other maps</p>`:""}
       ${q.q.length?`<p class="note"><strong>Bring:</strong> ${q.q.map(r=>`${r[1]}× ${esc(r[0])}`).join(", ")}</p>`:""}
@@ -416,16 +446,20 @@ function openPlan(){
   panel.innerHTML=`
   <div class="row" id="plan"><div class="chips"><span class="chip">Raid plan</span></div><button class="close" id="cls">Close</button></div>
   <h2>${esc(m)}</h2>
+  <p class="note" id="plannow">${planNowLine(m)}</p>
   <p class="note">${here.length} up-next quest${here.length===1?"":"s"} on this map${any.length?`, plus ${any.length} you can do on any map`:""}. Tick steps as you go.</p>
   ${here.length?`<ul class="plan">${here.map(card).join("")}</ul>`:`<p class="note">Nothing up next is tied to ${esc(m)}. Try another map, or work on the any-map quests below.</p>`}
   ${any.length?`<details class="path anymap"${here.length?"":" open"}><summary>Any map (${any.length})</summary><ul class="plan">${any.map(card).join("")}</ul></details>`:""}
-  ${cond.length?`<p class="note">Needs a map condition: ${cond.map(i=>`<button class="linkish inl" data-go="${i}">${esc(Q[i].n)}</button>`).join(", ")}. Check what's active before you queue.</p>`:""}
-  ${slug?`<div class="row"><a class="ext" href="${MF}/${slug}" target="_blank" rel="noopener">${esc(m)} map ↗</a></div>`:""}`;
+  ${condElse.length?`<p class="note">Needs a map condition: ${condElse.map(i=>{const nx=COND?COND.events.find(e=>condsOf(i).includes(e.name)&&e.start>Date.now()):null;
+      return `<button class="linkish inl" data-go="${i}">${esc(Q[i].n)}</button>${nx?` (next: ${esc(nx.name)} on ${esc(nx.map)} ${tfmt(nx.start)})`:""}`}).join(", ")}.</p>`:""}
+  ${slug?`<div class="row"><a class="ext" href="${MF}/${slug}" target="_blank" rel="noopener">${esc(m)} map ↗</a></div>`:""}
+  <p class="note">Map conditions for ${REGION_NAME[region]}, from <a href="https://metaforge.app/arc-raiders" target="_blank" rel="noopener">MetaForge</a>. <button class="linkish inl" id="regionsw">Switch to ${REGION_NAME[other]}</button></p>`;
   panel.hidden=false;document.getElementById("hint").hidden=true;panel.scrollTop=keepScroll;
   document.getElementById("cls").onclick=()=>{panel.hidden=true};
   wireSteps(panel);
   panel.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{backTo="plan";open(b.dataset.go)});
   panel.querySelectorAll("[data-done]").forEach(b=>b.onclick=()=>{const i=b.dataset.done;done.add(i);delete steps[i];saveSteps();save();openPlan()});
+  document.getElementById("regionsw").onclick=()=>{region=other;flabel();COND=null;condErr=false;openPlan();loadConditions()};
 }
 
 // "/" jumps to search (desktop), unless you're already typing somewhere.

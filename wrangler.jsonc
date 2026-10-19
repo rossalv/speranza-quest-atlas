@@ -1,11 +1,15 @@
-// Cloudflare Worker that serves the website (static assets only).
+// Cloudflare Worker that serves the website.
 // It was created with Cloudflare Drop and renamed to speranza-atlas.
 // The custom domain speranzaquestmap.us is attached in the Cloudflare dashboard.
 // Deployed by .github/workflows/deploy-site.yml (token permission: Workers Scripts → Edit).
+// Static files in dist-web/ are served first; worker/index.js only handles /api/*
+// (live map conditions) and otherwise hands back to the static assets.
 {
   "name": "speranza-atlas",
   "compatibility_date": "2026-10-01",
+  "main": "worker/index.js",
   "assets": {
-    "directory": "./dist-web"
+    "directory": "./dist-web",
+    "binding": "ASSETS"
   }
 }
