@@ -55,6 +55,31 @@ Walkthrough guide places it on Buried City:
 Note: The Root of the Matter's "Research Building" is in Buried City (wiki and
 ArcTracker agree), not Dam's Research & Administration building.
 
+## Spaceport (26 quests)
+
+Wiki Location includes Spaceport for 24 of these (the Quests table, or the quest's
+own page). The wiki pages for when-everything-falls and empathetic-prototypes didn't
+load, so those two use other sources (below).
+
+Objectives name Spaceport directly:
+greasing-her-palms, what-we-left-behind, medical-merchandise, eyes-in-the-sky,
+back-on-top, switching-the-supply, prescriptions-of-the-past, power-out,
+deciphering-the-data, dust-on-the-wires, taking-stock, the-clean-dream,
+the-stench-of-corruption, wires-crossed
+
+ArcTracker quest page lists Spaceport as a map (or its quest text names it):
+a-better-use, a-wrench-in-the-works, a-lay-of-the-land, on-the-map, turnabout,
+waking-the-grid, lost-in-transmission (Control Tower A6), worth-your-salt
+(Rocket Assembly)
+
+Walkthrough guide:
+- dormant-barons: FDayTalk (Baron husks on Spaceport)
+- to-the-skies: KeenGamer (probe and courier scans on Spaceport)
+
+No wiki page, two other sources:
+- when-everything-falls: ArcTracker (Spaceport) + Destructoid and KeenGamer walkthroughs
+- empathetic-prototypes: ArcTracker (Spaceport) + objectives name the Spaceport Trench
+
 ## Any map (22 quests, `m: []`)
 
 Wiki Location "Any", and the objectives name no place (kill/loot/search anywhere):
