@@ -6,16 +6,7 @@ move it to "Done" with the date.
 
 ## Next up
 
-### 1. Map-specific links in quest drawers
-- Many objectives start "On Dam Battlegrounds…", "On Buried City…" and so on. Detect
-  map names in `o` and show a link per map, instead of the single generic
-  "Interactive map" link.
-- Maps: Dam Battlegrounds, Buried City, Spaceport, Blue Gate, Stella Montis,
-  Riven Tides, Pendola Pass. Look up and verify MetaForge's per-map URLs before linking.
-  Keep the generic link when no map is named.
-- Effort: small.
-
-### 2. Plan a raid by map
+### 1. Plan a raid by map
 - Pick a map and see which of your up-next quests can be done there in one trip.
 - Needs a new per-quest field, e.g. `m: ["Dam Battlegrounds", ...]` (empty = any map).
   That's a research pass over all quests, using the CLAUDE.md sourcing rules (two
@@ -25,7 +16,7 @@ move it to "Done" with the date.
 
 ## Later
 
-### 3. Squad mode
+### 2. Squad mode
 - Squadmates join with a short code and see overlapping progress: quests everyone has
   up next, who is behind on a chain.
 - First server feature: add a Worker script (`main` in wrangler.jsonc) with an `/api`
@@ -34,7 +25,7 @@ move it to "Done" with the date.
   rules). No accounts: squad code plus a per-device name.
 - Effort: large.
 
-### 4. Visitor counts
+### 3. Visitor counts
 - Cloudflare Web Analytics (free, cookie-free) to see whether people besides Ross's
   squad use the site. Change the About "no tracking" line to something like
   "anonymous visit counts, no personal data".
@@ -49,7 +40,7 @@ move it to "Done" with the date.
 - Manual light/dark toggle (the site follows the system setting today).
 
 ## Housekeeping
-- Merged preview branches `phone-ux`, `reward-search` and `install-app` can be deleted
+- Merged preview branches `phone-ux`, `reward-search`, `install-app`, `items` and `map-links` can be deleted
   in GitHub (sessions here can't delete branches). Keep `ios-app` (the old iPhone app)
   and `deploy-status` (the deploy reports).
 
@@ -63,3 +54,4 @@ move it to "Done" with the date.
 - 2026-10-18: Reward search with path to the reward
 - 2026-10-18: Install like an app (home screen, offline)
 - 2026-10-18: Items update: "Needed for" search, "Items to keep" checklist with have-it ticks (`speranza-atlas-have`). Totals add up across quests because quests consume the items (confirmed by Ross).
+- 2026-10-18: Map-specific links in quest drawers (map named in quest name or objectives → MetaForge map; 37 of 123 quests). Quests that only name a POI get the per-quest map field in "Plan a raid by map".
