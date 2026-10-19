@@ -205,7 +205,7 @@ function open(i,keep,hl,hq){sel=i;const q=Q[i],k=TR[q.t];
   ${!done.has(i)&&anc.length?`<button id="here">I'm on this quest</button>`:""}</div>
   <div class="row"><a href="https://arcraiders.wiki/wiki/Special:Search?search=${encodeURIComponent(q.n)}&go=Go" target="_blank" rel="noopener">Wiki</a>
   <a href="https://metaforge.app/arc-raiders/map" target="_blank" rel="noopener">Interactive map</a></div>
-  <p class="note">Quest items aren't consumed, and squad progress is shared.</p>`;
+  <p class="note">Items you bring are handed in. Squad progress is shared.</p>`;
   panel.hidden=false;panel.scrollTop=0;document.getElementById("hint").hidden=true;draw();if(!keep)(focus?frameRoute(i,anc):centerOn(i));
   document.getElementById("cls").onclick=()=>{panel.hidden=true;sel=null;fromItems=false;draw()};
   const bi=document.getElementById("backitems");if(bi)bi.onclick=()=>openItems();

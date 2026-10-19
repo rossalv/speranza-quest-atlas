@@ -62,4 +62,4 @@ move it to "Done" with the date.
 - 2026-10-18: Website-only cleanup; CLAUDE.md rewrite; weekly quest-data check
 - 2026-10-18: Reward search with path to the reward
 - 2026-10-18: Install like an app (home screen, offline)
-- 2026-10-18: Items update: "Needed for" search, "Items to keep" checklist with have-it ticks (`speranza-atlas-have`). Open question: totals add quantities across quests; switch to the largest single need if quest items turn out not to be consumed.
+- 2026-10-18: Items update: "Needed for" search, "Items to keep" checklist with have-it ticks (`speranza-atlas-have`). Totals add up across quests because quests consume the items (confirmed by Ross).
