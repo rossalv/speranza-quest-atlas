@@ -1,0 +1,15 @@
+{
+  "result": "deployed",
+  "branch": "data-2026-11-04",
+  "commit": "23c7f452a815b2e1939dd77c45f42d671daf2837",
+  "finishedAt": "2026-11-04T15:07:21.776Z",
+  "project": "speranza-atlas",
+  "missingSettings": null,
+  "deploymentUrl": "https://data-2026-11-04-speranza-atlas.rfalvine.workers.dev",
+  "steps": {
+    "build": "success",
+    "dataCheck": "success",
+    "deploy": "success"
+  },
+  "runUrl": "https://github.com/rossalv/speranza-quest-atlas/actions/runs/41854385595"
+}
